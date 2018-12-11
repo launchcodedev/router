@@ -1,23 +1,15 @@
 {
   "compilerOptions": {
-    "declaration": true,
     "outDir": "./dist",
-    "sourceMap": true,
+    "declaration": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "lib": ["esnext"],
-    "target": "esnext",
+    "target": "es2015",
     "strict": true,
-    "strictPropertyInitialization": true,
-    "strictNullChecks": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*", "dist/*"]
-    }
+    "preserveConstEnums": true,
+    "sourceMap": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "**/*.test.ts"]
 }

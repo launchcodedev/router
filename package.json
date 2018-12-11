@@ -1,8 +1,9 @@
 {
   "name": "@servall/router",
-  "version": "0.0.1-alpha",
+  "version": "0.0.1-alpha.3",
   "description": "Common koa routing for Servall",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "author": {
     "name": "Servall Development",
     "email": "admin@servalldev.com",
@@ -15,6 +16,7 @@
   "scripts": {
     "build": "yarn clean && tsc",
     "clean": "rm -rf dist",
+    "prepublish": "yarn build",
     "lint": "tslint src/**/*.ts",
     "fix": "yarn lint --fix",
     "test": "jest"
@@ -35,6 +37,7 @@
   },
   "devDependencies": {
     "@types/fs-extra": "5",
+    "@types/jest": "23",
     "@types/koa": "2",
     "@types/koa-router": "7",
     "jest": "23",
@@ -42,6 +45,7 @@
     "koa-router": "7",
     "ts-jest": "23",
     "tslint": "5",
+    "tslint-config-airbnb": "5",
     "typescript": "3"
   },
   "peerDependencies": {
