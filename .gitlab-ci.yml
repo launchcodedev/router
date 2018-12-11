@@ -1,0 +1,181 @@
+stages:
+  - daily
+  - lint
+  - build
+  - test
+  - container
+  - test-e2e
+  - test-e2e-cleanup
+  - release
+  - deploy
+
+variables:
+  CONTAINER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+
+.node:
+  image: ${CI_REGISTRY_IMAGE}/build
+  before_script:
+    # cargo git dependencies
+    - eval $(ssh-agent -s) && echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null && mkdir -p ~/.ssh && chmod 700 ~/.ssh && ssh-keyscan -p 2222 gitlab.servalldatasystems.com >> ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+    # npm @servall packages
+    - echo "$NPM_LOGIN" >> .npmrc
+
+    - yarn install --pure-lockfile --cache-folder .yarn-cache
+  cache:
+    key: yarn-cache
+    untracked: true
+    paths:
+      - .yarn-cache
+      - node_modules
+
+.test-deploy:
+  extends: .node
+  variables:
+    RANCHER_API: https://rancher.servalldatasystems.com/v2-beta
+    RANCHER_PROJECT: 1a5
+    RANCHER_SERVICE: 1s198
+
+.docker:
+  image: docker
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+lint:
+  extends: .node
+  stage: lint
+  script:
+    - yarn lint
+
+build:
+  extends: .node
+  stage: build
+  script:
+    - yarn build
+  artifacts:
+    paths:
+      - dist/
+      - native/index.node
+
+test:
+  extends: .node
+  stage: test
+  dependencies:
+    - build
+  script:
+    - yarn test:unit
+
+container:
+  extends: .docker
+  stage: container
+  only:
+    - tags
+    - master
+    - develop
+  script:
+    - docker build --pull -t $CONTAINER_IMAGE
+      --build-arg GIT_REV="$CI_COMMIT_SHA"
+      --build-arg NPM_LOGIN="$NPM_LOGIN"
+      --build-arg SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY" .
+    - docker push $CONTAINER_IMAGE
+
+test-e2e:
+  extends: .test-deploy
+  stage: test-e2e
+  only:
+    - develop
+  dependencies:
+    - container
+  retry: 2
+  variables:
+    HOST: http://test.api.pibox.servalldatasystems.com
+  environment:
+    name: test-api
+    url: $HOST
+  script:
+    - >
+      launchConfig=$(curl --fail -X GET -u "${RANCHER_API_USER}:${RANCHER_API_PASSWORD}" -H "Accept: application/json" \
+        "${RANCHER_API}/projects/${RANCHER_PROJECT}/services/${RANCHER_SERVICE}" | jq '.launchConfig' | jq ".imageUuid=\"docker:${CONTAINER_IMAGE}\"")
+    - > # trigger a container upgrade with the existing config + new imageUuid
+      echo "Triggering upgrade";
+      curl -o /dev/null -X POST -H "Accept: application/json" -H "Content-Type: application/json" -u ${RANCHER_API_USER}:${RANCHER_API_PASSWORD} -d "{
+        \"inServiceStrategy\": {
+          \"launchConfig\": ${launchConfig}
+        }
+      }" "${RANCHER_API}/projects/${RANCHER_PROJECT}/services/${RANCHER_SERVICE}?action=upgrade"
+    - | # wait for container to go live
+      echo "Waiting to go live";
+      while [[ "$state" != "upgraded" || "$health" != "healthy" ]]; do
+        status=$(curl -s -X GET -u "${RANCHER_API_USER}:${RANCHER_API_PASSWORD}" -H "Accept: application/json" "${RANCHER_API}/projects/${RANCHER_PROJECT}/services/${RANCHER_SERVICE}")
+
+        prevState=$state
+        state=$(echo "$status" | jq -r '.state');
+
+        [ "$prevState" == "$state" ] || echo "state: $state";
+        [ "$state" != "upgrading" ] && [ "$state" != "upgraded" ] && echo "invalid state $state" && exit 1
+
+        instanceid=$(echo "$status" | jq -r '.instanceIds[1]');
+        if [ "$instanceid" != "null" ]; then
+          prevHealth=$health
+          health=$(curl -s -X GET -u "${RANCHER_API_USER}:${RANCHER_API_PASSWORD}" -H "Accept: application/json" \
+            "${RANCHER_API}/projects/${RANCHER_PROJECT}/containers/${instanceid}" | jq -r '.healthState')
+          [ "$prevHealth" == "$health" ] || echo "health: $health";
+          [ "$health" = "unhealthy" ] && echo "unhealthy container $instanceid" && exit 1
+        fi
+      done
+    # This is unfortunate, but our load balancer basically takes this long to pick up on the upgrade
+    # I've found no recourse for it other than waiting. This could check for 503 responses, I guess, but that seems equally bad.
+    - sleep 90
+    - yarn test:api:dredd
+    - > # finish the upgrade
+      curl --fail -o /dev/null -X POST -H "Accept: application/json" -H "Content-Type: application/json" -u ${RANCHER_API_USER}:${RANCHER_API_PASSWORD} "${RANCHER_API}/projects/${RANCHER_PROJECT}/services/${RANCHER_SERVICE}?action=finishupgrade"
+
+test-e2e-cleanup:
+  extends: .test-deploy
+  stage: test-e2e-cleanup
+  when: on_failure
+  only:
+    - develop
+  dependencies:
+    - test-e2e
+  script:
+    - >
+      curl --fail -o /dev/null -X POST -H "Accept: application/json" -H "Content-Type: application/json" -u ${RANCHER_API_USER}:${RANCHER_API_PASSWORD} "${RANCHER_API}/projects/${RANCHER_PROJECT}/services/${RANCHER_SERVICE}?action=rollback"
+
+release-container:
+  extends: .docker
+  stage: release
+  dependencies:
+    - container
+  only:
+    - master
+  script:
+    - docker pull $CONTAINER_IMAGE
+    - docker tag $CONTAINER_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+
+docs:
+  extends: .node
+  stage: release
+  only:
+    - master
+  script:
+    - yarn docs:publish
+  environment:
+    name: api-docs
+    url: https://api-docs.srvl.io/docs/servallpsbackend
+
+# build the ./build docker container every day (scheduled build) so that rust & node are up to date
+build-container:
+  extends: .docker
+  stage: daily
+  only:
+    variables:
+      - $RUN_CONTAINER_BUILD == "1"
+  script:
+    - docker build --pull build -t ${CI_REGISTRY_IMAGE}/build
+    - docker push ${CI_REGISTRY_IMAGE}/build

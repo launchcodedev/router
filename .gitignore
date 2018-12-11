@@ -1,0 +1,15 @@
+.app-config.secrets.toml
+
+/docs/index.html
+/coverage
+
+/dist
+node_modules
+
+native/target
+native/index.node
+native/artifacts.json
+
+.tscache
+
+yarn-error.log
