@@ -122,6 +122,4 @@ class DbRouter implements RouteFactory<Dependencies> {
 ```
 
 Note that the class based approach has it's actions as static. If they were not,
-`create` would need to be destructive to the instance of `DbRouter`, making it
-not a factory.
-
+`create` could not be called twice because it would destroy `this`.
