@@ -87,11 +87,8 @@ interface Dependencies {
   db: DbConnection;
 };
 
-class DbRouter implements RouteFactory<Dependencies>, Dependencies {
+class DbRouter implements RouteFactory<Dependencies> {
   prefix = '/db';
-
-  // dependencies are on the DbRouter instance, must ! since they are injected in create()
-  db!: DbConnection;
 
   getDependencies() {
     return {
@@ -100,31 +97,31 @@ class DbRouter implements RouteFactory<Dependencies>, Dependencies {
   }
 
   create(dependencies: Dependencies) {
-    // NOTE that this is destructive / has side effects
-    // you can't call create() twice on the same instance
-    Object.assign(this, dependencies);
-
-    return createRoutesWithCtx(this, [
+    return createRoutesWithCtx({ ...this, ...dependencies }, [
       {
         path: '/disconnect',
         method: HttpMethod.POST,
         async action(ctx, next) {
-          // you can always declare actions inline, which makes types easier
           this.db.isConnected = false;
         },
       },
       {
         path: '/status',
         method: HttpMethod.GET,
-        action: this.dbStatus,
+        action: DbRouter.dbStatus,
       },
     ]);
   }
 
-  async dbStatus(ctx: Context, next: Next) {
+  static async dbStatus(this: DbRouter & Dependencies, ctx: Context, next: Next) {
     return {
       connected: this.db.isConnected,
     };
   }
 }
 ```
+
+Note that the class based approach has it's actions as static. If they were not,
+`create` would need to be destructive to the instance of `DbRouter`, making it
+not a factory.
+

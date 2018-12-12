@@ -75,10 +75,8 @@ test('router class pattern', async () => {
     foo: string;
   }
 
-  class Test implements RouteFactory<Dependencies>, Dependencies {
+  class Test implements RouteFactory<Dependencies> {
     prefix = '/prefixed';
-
-    foo!: string;
 
     getDependencies() {
       return {
@@ -87,7 +85,7 @@ test('router class pattern', async () => {
     }
 
     create(dependencies: Dependencies) {
-      return createRoutesWithCtx(dependencies, [
+      return createRoutesWithCtx({ ...this, ...dependencies }, [
         {
           path: '/test1',
           method: HttpMethod.GET,
@@ -100,12 +98,12 @@ test('router class pattern', async () => {
         {
           path: '/test2',
           method: HttpMethod.GET,
-          action: this.test2,
+          action: Test.test2,
         },
       ]);
     }
 
-    async test2(ctx: Context, next: Next) {
+    static async test2(this: Test & Dependencies, ctx: Context, next: Next) {
       return {
         foobar: this.foo,
       };
@@ -184,11 +182,8 @@ test('readme class example', async () => {
     db: DbConnection;
   }
 
-  class DbRouter implements RouteFactory<Dependencies>, Dependencies {
+  class DbRouter implements RouteFactory<Dependencies> {
     prefix = '/db';
-
-    // dependencies are on the DbRouter instance, must ! since they are injected in create()
-    db!: DbConnection;
 
     getDependencies() {
       return {
@@ -197,9 +192,7 @@ test('readme class example', async () => {
     }
 
     create(dependencies: Dependencies) {
-      Object.assign(this, dependencies);
-
-      return createRoutesWithCtx(this, [
+      return createRoutesWithCtx({ ...this, ...dependencies }, [
         {
           path: '/disconnect',
           method: HttpMethod.POST,
@@ -210,12 +203,12 @@ test('readme class example', async () => {
         {
           path: '/status',
           method: HttpMethod.GET,
-          action: this.dbStatus,
+          action: DbRouter.dbStatus,
         },
       ]);
     }
 
-    async dbStatus(ctx: Context, next: Next) {
+    static async dbStatus(this: DbRouter & Dependencies, ctx: Context, next: Next) {
       return {
         connected: this.db.isConnected,
       };
