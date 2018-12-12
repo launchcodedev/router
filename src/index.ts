@@ -37,7 +37,7 @@ export enum SchemaType {
   JSON,
 }
 
-type Context = Koa.Context & {
+export type Context = Koa.Context & {
   request: {
     body?: {
       [key: string]: any;
@@ -45,32 +45,28 @@ type Context = Koa.Context & {
   },
 };
 
+export type Next = () => Promise<void>;
+
 export type RouteActionResponse = Promise<object | string | void>;
-export type RouteAction = (ctx: Context, next: Function) => RouteActionResponse;
+export type RouteAction = (ctx: Context, next: Next) => RouteActionResponse;
+export type RouteActionWithContext<T> = (this: T, ctx: Context, next: Next) => RouteActionResponse;
 
 export interface RouteFactory<T> {
-  prefix?: string;
+  readonly prefix?: string;
   getDependencies: () => Promise<T> | T;
   create: (dependencies: T) => Promise<Route[]> | Route[];
   middleware?: (dependencies: T) => Promise<Middleware[]> | Middleware[];
 }
 
-export interface Route {
-  path: string;
-  method: HttpMethod;
-  schema?: { type: SchemaType, obj: object };
-  action: RouteAction;
-  middleware?: Middleware[];
-}
-
-// same as a Route, but with a Ctx object as 'this' in the action
 export interface RouteWithContext<Ctx> {
   path: string;
   method: HttpMethod;
   schema?: { type: SchemaType, obj: object };
-  action: (this: Ctx, ctx: Context, next: Function) => RouteActionResponse;
+  action: RouteActionWithContext<Ctx>;
   middleware?: Middleware[];
 }
+
+export type Route = RouteWithContext<void>;
 
 export const createRoutesWithCtx = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
   return routes.map(route => ({
@@ -175,7 +171,7 @@ export const createRouter = async (dir: string) => {
     const bindFn: Function = dynRouter[method.toLowerCase()].bind(dynRouter);
 
     console.log(`\t${path}`);
-    bindFn(path, ...middleware, async (ctx: Context, next: Function) => {
+    bindFn(path, ...middleware, async (ctx: Context, next: Next) => {
       try {
         if (validate) {
           validate(ctx.request.body);
