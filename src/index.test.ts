@@ -14,7 +14,7 @@ test('bindRouteActions', () => {
       path: '/',
       method: HttpMethod.GET,
       async action() {
-        expect(true).toBe(true);
+        expect(this.foo).toBe(true);
       },
     },
   ]);
