@@ -2,7 +2,20 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import * as fs from 'fs-extra';
 import * as Ajv from 'ajv';
-import { basename, join } from 'path';
+import { join } from 'path';
+
+declare module 'koa' {
+  interface Request {
+    body?: {
+      [key: string]: any;
+    };
+  }
+}
+
+type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U: never;
+type ReturnType<T> = T extends (...args: any) => infer R ? R: never;
+type ReplaceReturnType<T, TNewReturn> = (...a: ArgumentTypes<T>) => TNewReturn;
+type AddContext<T, TContext> = (this: TContext, ...a: ArgumentTypes<T>) => ReturnType<T>;
 
 export type Middleware = Router.IMiddleware;
 
@@ -21,13 +34,13 @@ export class BaseError extends Error {
 }
 
 export enum HttpMethod {
-  GET = 'GET',
-  POST = 'POST',
-  PUT = 'PUT',
-  PATCH = 'PATCH',
-  DELETE = 'DELETE',
-  HEAD = 'HEAD',
-  OPTIONS = 'OPTIONS',
+  GET = 'get',
+  POST = 'post',
+  PUT = 'put',
+  PATCH = 'patch',
+  DELETE = 'delete',
+  HEAD = 'head',
+  OPTIONS = 'options',
 
   /// special value that binds to all http methods
   all = 'all',
@@ -37,19 +50,9 @@ export enum SchemaType {
   JSON,
 }
 
-export type Context = Koa.Context & {
-  request: {
-    body?: {
-      [key: string]: any;
-    },
-  },
-};
-
-export type Next = () => Promise<void>;
-
 export type RouteActionResponse = Promise<object | string | void>;
-export type RouteAction = (ctx: Context, next: Next) => RouteActionResponse;
-export type RouteActionWithContext<T> = (this: T, ctx: Context, next: Next) => RouteActionResponse;
+export type RouteAction = ReplaceReturnType<Middleware, RouteActionResponse>;
+export type RouteActionWithContext<T> = AddContext<RouteAction, T>;
 
 export interface RouteFactory<T> {
   readonly prefix?: string;
@@ -167,11 +170,10 @@ export const createRouter = async (dir: string) => {
     }
 
     // access the router.get function dynamically from HttpMethod strings
-    const dynRouter = (router as any as { [key: string]: Function });
-    const bindFn: Function = dynRouter[method.toLowerCase()].bind(dynRouter);
+    const bindFn = router[method].bind(router);
 
     console.log(`\t${path}`);
-    bindFn(path, ...middleware, async (ctx: Context, next: Next) => {
+    bindFn(path, ...middleware, async (ctx, next) => {
       try {
         if (validate) {
           validate(ctx.request.body);
