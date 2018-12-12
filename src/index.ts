@@ -68,7 +68,7 @@ export interface RouteWithContext<Ctx> {
 
 export type Route = RouteWithContext<void>;
 
-export const createRoutesWithCtx = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
+export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
   return routes.map(route => ({
     ...route,
     action: route.action.bind(c),

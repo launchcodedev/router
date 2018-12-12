@@ -21,7 +21,7 @@ import {
   RouteFactory,
   RouteActionWithContext,
   HttpMethod,
-  createRoutesWithCtx,
+  bindRouteActions,
 } from '@servall/router';
 
 type DbConnection = {
@@ -48,7 +48,7 @@ const factory: RouteFactory<Dependencies> = {
   },
 
   create(dependencies: Dependencies) {
-    return createRoutesWithCtx(dependencies, [
+    return bindRouteActions(dependencies, [
       {
         path: '/disconnect',
         method: HttpMethod.POST,
@@ -76,7 +76,7 @@ import {
   HttpMethod,
   Context,
   Next,
-  createRoutesWithCtx,
+  bindRouteActions,
 } from '@servall/router';
 
 type DbConnection = {
@@ -97,7 +97,7 @@ class DbRouter implements RouteFactory<Dependencies> {
   }
 
   create(dependencies: Dependencies) {
-    return createRoutesWithCtx({ ...this, ...dependencies }, [
+    return bindRouteActions({ ...this, ...dependencies }, [
       {
         path: '/disconnect',
         method: HttpMethod.POST,

@@ -4,12 +4,12 @@ import {
   HttpMethod,
   Context,
   Next,
-  createRoutesWithCtx,
+  bindRouteActions,
 } from './index';
 
-test('createRoutesWithCtx', () => {
+test('bindRouteActions', () => {
   expect.assertions(1);
-  const routes = createRoutesWithCtx({ foo: true }, [
+  const routes = bindRouteActions({ foo: true }, [
     {
       path: '/',
       method: HttpMethod.GET,
@@ -43,7 +43,7 @@ test('router factory pattern', async () => {
     },
 
     create(dependencies: Dependencies) {
-      return createRoutesWithCtx(dependencies, [
+      return bindRouteActions(dependencies, [
         {
           path: '/test1',
           method: HttpMethod.GET,
@@ -85,7 +85,7 @@ test('router class pattern', async () => {
     }
 
     create(dependencies: Dependencies) {
-      return createRoutesWithCtx({ ...this, ...dependencies }, [
+      return bindRouteActions({ ...this, ...dependencies }, [
         {
           path: '/test1',
           method: HttpMethod.GET,
@@ -144,7 +144,7 @@ test('readme factory example', async () => {
     },
 
     create(dependencies: Dependencies) {
-      return createRoutesWithCtx(dependencies, [
+      return bindRouteActions(dependencies, [
         {
           path: '/disconnect',
           method: HttpMethod.POST,
@@ -192,7 +192,7 @@ test('readme class example', async () => {
     }
 
     create(dependencies: Dependencies) {
-      return createRoutesWithCtx({ ...this, ...dependencies }, [
+      return bindRouteActions({ ...this, ...dependencies }, [
         {
           path: '/disconnect',
           method: HttpMethod.POST,
