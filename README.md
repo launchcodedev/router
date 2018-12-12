@@ -1,7 +1,7 @@
 # Use Me!
 ```typescript
 import * as path from 'path';
-import { createRouter } from './routes';
+import { createRouter } from '@servall/router';
 
 const api = await createRouter(path.join(__dirname, 'routes'));
 
