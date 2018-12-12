@@ -16,7 +16,7 @@ test('createRoutesWithCtx', () => {
       async action() {
         expect(true).toBe(true);
       },
-    }
+    },
   ]);
 
   routes[0].action(null as any, null as any);
@@ -25,9 +25,9 @@ test('createRoutesWithCtx', () => {
 test('router factory pattern', async () => {
   interface Dependencies {
     foo: string;
-  };
+  }
 
-  const test2: RouteActionWithContext<Dependencies> = async function(ctx, next) {
+  const test2: RouteActionWithContext<Dependencies> = async function (ctx, next) {
     return {
       foobar: this.foo,
     };
@@ -73,7 +73,7 @@ test('router factory pattern', async () => {
 test('router class pattern', async () => {
   interface Dependencies {
     foo: string;
-  };
+  }
 
   class Test implements RouteFactory<Dependencies>, Dependencies {
     prefix = '/prefixed';
@@ -128,9 +128,9 @@ test('readme factory example', async () => {
 
   interface Dependencies {
     db: DbConnection;
-  };
+  }
 
-  const dbStatus: RouteActionWithContext<Dependencies> = async function(ctx, next) {
+  const dbStatus: RouteActionWithContext<Dependencies> = async function (ctx, next) {
     return {
       connected: this.db.isConnected,
     };
@@ -182,7 +182,7 @@ test('readme class example', async () => {
 
   interface Dependencies {
     db: DbConnection;
-  };
+  }
 
   class DbRouter implements RouteFactory<Dependencies>, Dependencies {
     prefix = '/db';
