@@ -18,6 +18,8 @@ type ReplaceReturnType<T, TNewReturn> = (...a: ArgumentTypes<T>) => TNewReturn;
 type AddContext<T, TContext> = (this: TContext, ...a: ArgumentTypes<T>) => ReturnType<T>;
 
 export type Middleware = Router.IMiddleware;
+export type Context = Router.IRouterContext;
+export type Next = ArgumentTypes<Middleware>[1];
 
 export class BaseError extends Error {
   code: number = 0;
