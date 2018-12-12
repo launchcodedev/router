@@ -12,9 +12,9 @@ declare module 'koa' {
   }
 }
 
-type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U: never;
-type ReturnType<T> = T extends (...args: any) => infer R ? R: never;
-type ReplaceReturnType<T, TNewReturn> = (...a: ArgumentTypes<T>) => TNewReturn;
+type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
+type ReturnType<T> = T extends (...args: any) => infer R ? R : never;
+type ReplaceReturnType<T, TNewReturn extends ReturnType<T>> = (...a: ArgumentTypes<T>) => TNewReturn;
 type AddContext<T, TContext> = (this: TContext, ...a: ArgumentTypes<T>) => ReturnType<T>;
 
 export type Middleware = Router.IMiddleware;
