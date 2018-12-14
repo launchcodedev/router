@@ -1,15 +1,6 @@
-.app-config.secrets.toml
-
-/docs/index.html
-/coverage
-
 /dist
+/coverage
 node_modules
-
-native/target
-native/index.node
-native/artifacts.json
-
+.DS_Store
 .tscache
-
 yarn-error.log
