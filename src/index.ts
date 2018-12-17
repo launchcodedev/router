@@ -195,13 +195,13 @@ export const createRouter = async (dir: string) => {
 
         const payload = {
           success: false,
-          code: error.code,
+          code: error.code || -1,
           message: 'Something went wrong',
         };
 
         // don't reveal internal details unless you've opted-in by extending BaseError
         if (error instanceof BaseError || process.env.NODE_ENV === 'development') {
-          payload.message = error.message;
+          payload.message = error.message || error.toString();
         }
 
         ctx.status = error.statusCode || 500;
