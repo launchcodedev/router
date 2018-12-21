@@ -46,9 +46,11 @@
     "ts-jest": "23",
     "tslint": "5",
     "tslint-config-airbnb": "5",
-    "typescript": "3"
+    "typescript": "3",
+    "ajv": "^6.6.2"
   },
   "peerDependencies": {
+    "ajv": "^6.6.2",
     "koa": "2",
     "koa-router": "7"
   },
