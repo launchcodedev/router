@@ -42,6 +42,7 @@
     "@types/koa-router": "7",
     "jest": "23",
     "koa": "2",
+    "koa-bodyparser": "4",
     "koa-router": "7",
     "ts-jest": "23",
     "tslint": "5",
@@ -50,6 +51,7 @@
   },
   "peerDependencies": {
     "koa": "2",
+    "koa-bodyparser": "4",
     "koa-router": "7"
   },
   "dependencies": {
