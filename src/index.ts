@@ -4,14 +4,6 @@ import * as fs from 'fs-extra';
 import * as Ajv from 'ajv';
 import { join } from 'path';
 
-declare module 'koa' {
-  interface Request {
-    body?: {
-      [key: string]: any;
-    };
-  }
-}
-
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
 type ReturnType<T> = T extends (...args: any) => infer R ? R : never;
 type ReplaceReturnType<T, R extends ReturnType<T>> = (...a: ArgumentTypes<T>) => R;
@@ -177,8 +169,11 @@ export const createRouter = async (dir: string) => {
     console.log(`\t${path}`);
     bindFn(path, ...middleware, async (ctx, next) => {
       try {
-        if (validate) {
-          validate(ctx.request.body);
+        // validation only works if bodyparser is present
+        const request = (ctx.request as any);
+
+        if (validate && request.body) {
+          validate(request.body);
         }
 
         const response = await action(ctx, next);

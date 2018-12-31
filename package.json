@@ -1,6 +1,6 @@
 {
   "name": "@servall/router",
-  "version": "0.1.1-dev",
+  "version": "0.1.2-dev",
   "description": "Common koa routing for Servall",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -42,6 +42,7 @@
     "@types/koa-router": "7",
     "jest": "23",
     "koa": "2",
+    "koa-bodyparser": "4",
     "koa-router": "7",
     "ts-jest": "23",
     "tslint": "5",
@@ -52,6 +53,7 @@
   "peerDependencies": {
     "ajv": "6",
     "koa": "2",
+    "koa-bodyparser": "4",
     "koa-router": "7"
   },
   "dependencies": {
