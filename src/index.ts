@@ -186,10 +186,7 @@ export const createRouter = async (dir: string) => {
           ctx.body = response;
         }
       } catch (error) {
-        console.error(error);
-
         const payload = {
-          success: false,
           code: error.code || -1,
           message: 'Something went wrong',
         };
@@ -199,8 +196,7 @@ export const createRouter = async (dir: string) => {
           payload.message = error.message || error.toString();
         }
 
-        ctx.status = error.statusCode || 500;
-        ctx.body = payload;
+        ctx.throw(error.statusCode || 500, payload);
       }
     });
   });
