@@ -44,6 +44,20 @@ export enum SchemaType {
   JSON,
 }
 
+export interface Schema {
+  type: SchemaType;
+  obj: object;
+}
+
+export class JSONSchema implements Schema {
+  readonly type: SchemaType = SchemaType.JSON;
+  readonly obj: object;
+
+  constructor(schema: object) {
+    this.obj = schema;
+  }
+}
+
 export type RouteActionResponse = Promise<object | string | void>;
 export type RouteAction = ReplaceReturnType<Middleware, RouteActionResponse>;
 export type RouteActionWithContext<T> = AddContext<RouteAction, T>;
@@ -58,7 +72,7 @@ export interface RouteFactory<T> {
 export interface RouteWithContext<Ctx> {
   path: string;
   method: HttpMethod;
-  schema?: { type: SchemaType, obj: object };
+  schema?: Schema;
   action: RouteActionWithContext<Ctx>;
   middleware?: Middleware[];
 }
