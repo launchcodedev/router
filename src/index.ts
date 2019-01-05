@@ -211,7 +211,7 @@ export const createRouter = async (dir: string) => {
           payload.message = error.message || error.toString();
         }
 
-        ctx.throw(error.statusCode || 500, payload);
+        ctx.throw(error.status || error.statusCode || 500, payload);
       }
     });
   });
