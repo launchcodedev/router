@@ -203,6 +203,7 @@ export const createRouter = async (dir: string) => {
         const payload = {
           code: error.code || -1,
           message: 'Something went wrong',
+          originalError: error,
         };
 
         // don't reveal internal details unless you've opted-in by extending BaseError
