@@ -67,6 +67,7 @@ export interface RouteFactory<T> {
   getDependencies: () => Promise<T> | T;
   create: (dependencies: T) => Promise<Route[]> | Route[];
   middleware?: (dependencies: T) => Promise<Middleware[]> | Middleware[];
+  nested?: (dependencies: T) => Promise<RouteFactory<any>[]> | RouteFactory<any>[];
 }
 
 export interface RouteWithContext<Ctx> {
@@ -118,6 +119,11 @@ const createRoutes = async (modules: RouteFactory<any>[]) => {
       routerMiddleware = await factory.middleware(dependencies);
     }
 
+    if (factory.nested) {
+      const nested = await factory.nested(dependencies);
+      routes.push(...await createRoutes(nested));
+    }
+
     return routes.map(route => ({
       ...route,
       // add the prefix of the router to each Route
@@ -134,14 +140,17 @@ const createRoutes = async (modules: RouteFactory<any>[]) => {
   return routerRoutes.reduce<Route[]>((acc, routes) => acc.concat(routes), []);
 };
 
-export const createRouter = async (dir: string) => {
+export const createRouterRaw = async (modules: RouteFactory<any>[], debug = false) => {
+  const routes = await createRoutes(modules);
   const router = new Router();
   const ajv = new Ajv();
 
-  console.log('Mounting routes...');
+  if (debug) {
+    console.log('Mounting routes...');
+  }
 
   // Call router.get(), router.post(), router.put(), etc, to set up routes
-  (await createRoutes(getRouteModules(dir))).forEach((route) => {
+  routes.forEach((route) => {
     const {
       path,
       action,
@@ -180,7 +189,10 @@ export const createRouter = async (dir: string) => {
     // access the router.get function dynamically from HttpMethod strings
     const bindFn = router[method].bind(router);
 
-    console.log(`\t${path}`);
+    if (debug) {
+      console.log(`\t${path}`);
+    }
+
     bindFn(path, ...middleware, async (ctx, next) => {
       try {
         // validation only works if bodyparser is present
@@ -217,4 +229,8 @@ export const createRouter = async (dir: string) => {
   });
 
   return router;
+};
+
+export const createRouter = async (dir: string, debug = false) => {
+  return createRouterRaw(getRouteModules(dir), debug);
 };

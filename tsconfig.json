@@ -4,7 +4,7 @@
     "declaration": true,
     "module": "commonjs",
     "moduleResolution": "node",
-    "lib": ["esnext"],
+    "lib": ["esnext", "DOM"],
     "target": "es2015",
     "strict": true,
     "preserveConstEnums": true,

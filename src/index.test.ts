@@ -1,3 +1,5 @@
+import * as Koa from 'koa';
+import * as supertest from 'supertest';
 import {
   RouteFactory,
   RouteActionWithContext,
@@ -5,6 +7,7 @@ import {
   Context,
   Next,
   bindRouteActions,
+  createRouterRaw,
 } from './index';
 
 test('bindRouteActions', () => {
@@ -226,4 +229,235 @@ test('readme class example', async () => {
 
   const res2 = await routes[1].action(null as any as Context, null as any as Next);
   expect(res2).toEqual({ connected: false });
+});
+
+test('nested routers', async () => {
+  const nested: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/nested',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'nested' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const factory: RouteFactory<{}> = {
+    prefix: '/all',
+    nested: () => [nested],
+
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/top',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'top' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const router = await createRouterRaw([factory]);
+
+  const app = new Koa();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  const test = supertest.agent(app.listen());
+  await test.get('/all/top').expect({ name: 'top' });
+  await test.get('/all/nested').expect({ name: 'nested' });
+  await test.get('/all/invalid').expect(404);
+  await test.get('/top').expect(404);
+  await test.get('/nested').expect(404);
+});
+
+test('nested router with prefix', async () => {
+  const nested: RouteFactory<{}> = {
+    prefix: '/b',
+
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/nested',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'nested' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const factory: RouteFactory<{}> = {
+    prefix: '/all',
+    nested: () => [nested],
+
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/top',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'top' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const router = await createRouterRaw([factory]);
+  const app = new Koa();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  const test = supertest.agent(app.listen());
+
+  await test.get('/all/top').expect({ name: 'top' });
+  await test.get('/all/b/nested').expect({ name: 'nested' });
+  await test.get('/all/nested').expect(404);
+});
+
+test('double nested router', async () => {
+  const deep: RouteFactory<{}> = {
+    prefix: '/a',
+
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/nested',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'nested-a' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const nested: RouteFactory<{}> = {
+    prefix: '/b',
+    nested: () => [deep],
+
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/nested',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'nested-b' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const factory: RouteFactory<{}> = {
+    prefix: '/all',
+    nested: () => [nested],
+
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/top',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'top' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const router = await createRouterRaw([factory]);
+  const app = new Koa();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  const test = supertest.agent(app.listen());
+
+  await test.get('/all/top').expect({ name: 'top' });
+  await test.get('/all/b/a/nested').expect({ name: 'nested-a' });
+  await test.get('/all/b/nested').expect({ name: 'nested-b' });
+  await test.get('/all/nested').expect(404);
+});
+
+test('flat nested routers', async () => {
+  const nested: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/nested',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'nested' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const factory: RouteFactory<{}> = {
+    nested: () => [nested],
+
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/top',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { name: 'top' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const router = await createRouterRaw([factory]);
+
+  const app = new Koa();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  const test = supertest.agent(app.listen());
+  await test.get('/top').expect({ name: 'top' });
+  await test.get('/nested').expect({ name: 'nested' });
+  await test.get('/invalid').expect(404);
 });
