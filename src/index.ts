@@ -87,26 +87,6 @@ export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) =
   }));
 };
 
-const getRouteModules = (dir: string): RouteFactory<any>[] => fs.readdirSync(dir)
-  .filter(n => n.match(/\.(j|t)s$/))
-  .filter(n => !n.match(/\.d\.ts$/))
-  .filter(n => !n.match(/^index\./))
-  .map((filename) => {
-    const { default: factory }: {
-      default: RouteFactory<any>,
-    } = require(join(dir, filename));
-
-    if (!factory) throw new Error(`missing default export: ${join(dir, filename)}`);
-
-    // we account for 'export default class implements RouteFactory' here by just doing `new` for it
-    if (!factory.create) {
-      const FactoryClass = factory as any as (new () => RouteFactory<any>);
-      return new FactoryClass();
-    }
-
-    return factory;
-  });
-
 const createRoutes = async (modules: RouteFactory<any>[]) => {
   const routerRoutes: Route[][] = await Promise.all(modules.map(async (factory) => {
     // inject dependencies
@@ -139,6 +119,27 @@ const createRoutes = async (modules: RouteFactory<any>[]) => {
   // flatten all routes
   return routerRoutes.reduce<Route[]>((acc, routes) => acc.concat(routes), []);
 };
+
+export const findRoutes = async (dir: string): Promise<RouteFactory<any>[]> =>
+  (await fs.readdir(dir))
+    .filter(n => n.match(/\.(j|t)s$/))
+    .filter(n => !n.match(/\.d\.ts$/))
+    .filter(n => !n.match(/^index\./))
+    .map((filename) => {
+      const { default: factory }: {
+        default: RouteFactory<any>,
+      } = require(join(dir, filename));
+
+      if (!factory) throw new Error(`missing default export: ${join(dir, filename)}`);
+
+      // we account for 'export default class implements RouteFactory' here by calling `new`
+      if (!factory.create) {
+        const FactoryClass = factory as any as (new () => RouteFactory<any>);
+        return new FactoryClass();
+      }
+
+      return factory;
+    });
 
 export const createRouterRaw = async (modules: RouteFactory<any>[], debug = false) => {
   const routes = await createRoutes(modules);
@@ -232,5 +233,5 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
 };
 
 export const createRouter = async (dir: string, debug = false) => {
-  return createRouterRaw(getRouteModules(dir), debug);
+  return createRouterRaw(await findRoutes(dir), debug);
 };
