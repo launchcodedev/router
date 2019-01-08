@@ -276,12 +276,15 @@ test('nested routers', async () => {
   const app = new Koa();
   app.use(router.routes());
   app.use(router.allowedMethods());
-  const test = supertest.agent(app.listen());
+  const server = app.listen();
+  const test = supertest.agent(server);
   await test.get('/all/top').expect({ name: 'top' });
   await test.get('/all/nested').expect({ name: 'nested' });
   await test.get('/all/invalid').expect(404);
   await test.get('/top').expect(404);
   await test.get('/nested').expect(404);
+
+  await new Promise(resolve => server.close(resolve));
 });
 
 test('nested router with prefix', async () => {
@@ -330,11 +333,14 @@ test('nested router with prefix', async () => {
   const app = new Koa();
   app.use(router.routes());
   app.use(router.allowedMethods());
-  const test = supertest.agent(app.listen());
+  const server = app.listen();
+  const test = supertest.agent(server);
 
   await test.get('/all/top').expect({ name: 'top' });
   await test.get('/all/b/nested').expect({ name: 'nested' });
   await test.get('/all/nested').expect(404);
+
+  await new Promise(resolve => server.close(resolve));
 });
 
 test('double nested router', async () => {
@@ -404,12 +410,15 @@ test('double nested router', async () => {
   const app = new Koa();
   app.use(router.routes());
   app.use(router.allowedMethods());
-  const test = supertest.agent(app.listen());
+  const server = app.listen();
+  const test = supertest.agent(server);
 
   await test.get('/all/top').expect({ name: 'top' });
   await test.get('/all/b/a/nested').expect({ name: 'nested-a' });
   await test.get('/all/b/nested').expect({ name: 'nested-b' });
   await test.get('/all/nested').expect(404);
+
+  await new Promise(resolve => server.close(resolve));
 });
 
 test('flat nested routers', async () => {
@@ -456,8 +465,11 @@ test('flat nested routers', async () => {
   const app = new Koa();
   app.use(router.routes());
   app.use(router.allowedMethods());
-  const test = supertest.agent(app.listen());
+  const server = app.listen();
+  const test = supertest.agent(server);
   await test.get('/top').expect({ name: 'top' });
   await test.get('/nested').expect({ name: 'nested' });
   await test.get('/invalid').expect(404);
+
+  await new Promise(resolve => server.close(resolve));
 });
