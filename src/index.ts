@@ -205,7 +205,7 @@ export const createRouter = async (dir: string) => {
         }
 
         error.code = error.code || -1;
-        error.status = error.status || error.statusCode || 500,
+        error.status = error.status || error.statusCode || 500;
         error.internalMessage = error.message;
 
         // don't reveal internal message unless you've opted-in by extending BaseError
