@@ -200,18 +200,20 @@ export const createRouter = async (dir: string) => {
           ctx.body = response;
         }
       } catch (error) {
-        const payload = {
-          code: error.code || -1,
-          message: 'Something went wrong',
-          originalError: error,
-        };
-
-        // don't reveal internal details unless you've opted-in by extending BaseError
-        if (error instanceof BaseError || process.env.NODE_ENV === 'development') {
-          payload.message = error.message || error.toString();
+        if (typeof error === 'string') {
+          error = new Error(error);
         }
 
-        ctx.throw(error.status || error.statusCode || 500, payload);
+        error.code = error.code || -1;
+        error.status = error.status || error.statusCode || 500,
+        error.internalMessage = error.message;
+
+        // don't reveal internal message unless you've opted-in by extending BaseError
+        if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
+          error.message = 'Something went wrong';
+        }
+
+        throw error;
       }
     });
   });
