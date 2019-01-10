@@ -67,6 +67,7 @@ export interface RouteFactory<T> {
   getDependencies: () => Promise<T> | T;
   create: (dependencies: T) => Promise<Route[]> | Route[];
   middleware?: (dependencies: T) => Promise<Middleware[]> | Middleware[];
+  nested?: (dependencies: T) => Promise<RouteFactory<any>[]> | RouteFactory<any>[];
 }
 
 export interface RouteWithContext<Ctx> {
@@ -86,26 +87,6 @@ export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) =
   }));
 };
 
-const getRouteModules = (dir: string): RouteFactory<any>[] => fs.readdirSync(dir)
-  .filter(n => n.match(/\.(j|t)s$/))
-  .filter(n => !n.match(/\.d\.ts$/))
-  .filter(n => !n.match(/^index\./))
-  .map((filename) => {
-    const { default: factory }: {
-      default: RouteFactory<any>,
-    } = require(join(dir, filename));
-
-    if (!factory) throw new Error(`missing default export: ${join(dir, filename)}`);
-
-    // we account for 'export default class implements RouteFactory' here by just doing `new` for it
-    if (!factory.create) {
-      const FactoryClass = factory as any as (new () => RouteFactory<any>);
-      return new FactoryClass();
-    }
-
-    return factory;
-  });
-
 const createRoutes = async (modules: RouteFactory<any>[]) => {
   const routerRoutes: Route[][] = await Promise.all(modules.map(async (factory) => {
     // inject dependencies
@@ -116,6 +97,11 @@ const createRoutes = async (modules: RouteFactory<any>[]) => {
 
     if (factory.middleware) {
       routerMiddleware = await factory.middleware(dependencies);
+    }
+
+    if (factory.nested) {
+      const nested = await factory.nested(dependencies);
+      routes.push(...await createRoutes(nested));
     }
 
     return routes.map(route => ({
@@ -134,14 +120,38 @@ const createRoutes = async (modules: RouteFactory<any>[]) => {
   return routerRoutes.reduce<Route[]>((acc, routes) => acc.concat(routes), []);
 };
 
-export const createRouter = async (dir: string) => {
+export const findRoutes = async (dir: string): Promise<RouteFactory<any>[]> =>
+  (await fs.readdir(dir))
+    .filter(n => n.match(/\.(j|t)s$/))
+    .filter(n => !n.match(/\.d\.ts$/))
+    .filter(n => !n.match(/^index\./))
+    .map((filename) => {
+      const { default: factory }: {
+        default: RouteFactory<any>,
+      } = require(join(dir, filename));
+
+      if (!factory) throw new Error(`missing default export: ${join(dir, filename)}`);
+
+      // we account for 'export default class implements RouteFactory' here by calling `new`
+      if (!factory.create) {
+        const FactoryClass = factory as any as (new () => RouteFactory<any>);
+        return new FactoryClass();
+      }
+
+      return factory;
+    });
+
+export const createRouterRaw = async (modules: RouteFactory<any>[], debug = false) => {
+  const routes = await createRoutes(modules);
   const router = new Router();
   const ajv = new Ajv();
 
-  console.log('Mounting routes...');
+  if (debug) {
+    console.log('Mounting routes...');
+  }
 
   // Call router.get(), router.post(), router.put(), etc, to set up routes
-  (await createRoutes(getRouteModules(dir))).forEach((route) => {
+  routes.forEach((route) => {
     const {
       path,
       action,
@@ -180,7 +190,10 @@ export const createRouter = async (dir: string) => {
     // access the router.get function dynamically from HttpMethod strings
     const bindFn = router[method].bind(router);
 
-    console.log(`\t${path}`);
+    if (debug) {
+      console.log(`\t${path}`);
+    }
+
     bindFn(path, ...middleware, async (ctx, next) => {
       try {
         // validation only works if bodyparser is present
@@ -219,4 +232,8 @@ export const createRouter = async (dir: string) => {
   });
 
   return router;
+};
+
+export const createRouter = async (dir: string, debug = false) => {
+  return createRouterRaw(await findRoutes(dir), debug);
 };
