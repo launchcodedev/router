@@ -122,7 +122,7 @@ const createRoutes = async (modules: RouteFactory<any>[]) => {
 
 export const findRoutes = async (dir: string): Promise<RouteFactory<any>[]> =>
   (await fs.readdir(dir))
-    .filter(n => n.match(/\.(j|t)s$/))
+    .filter(n => n.match(/\.(j|t)sx?$/))
     .filter(n => !n.match(/\.d\.ts$/))
     .filter(n => !n.match(/^index\./))
     .map((filename) => {
