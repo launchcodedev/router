@@ -58,7 +58,7 @@ export class JSONSchema implements Schema {
   }
 }
 
-export type RouteActionResponse = Promise<object | string | void>;
+export type RouteActionResponse = Promise<object | string | number | boolean | void>;
 export type RouteAction = ReplaceReturnType<Middleware, RouteActionResponse>;
 export type RouteActionWithContext<T> = AddContext<RouteAction, T>;
 
