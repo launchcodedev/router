@@ -160,7 +160,7 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
       middleware = [],
     } = route;
 
-    let validate: (body: any) => void;
+    let validate: ((body: any) => void) | undefined;
 
     if (schema) {
       if (schema.type !== SchemaType.JSON) {
@@ -194,15 +194,23 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
       console.log(`\t${path}`);
     }
 
-    bindFn(path, ...middleware, async (ctx, next) => {
-      try {
+    if (validate) {
+      bindFn(path, async (ctx, next) => {
         // validation only works if bodyparser is present
-        const request = (ctx.request as any);
+        const { body } = (ctx.request as any);
 
-        if (validate && request.body) {
-          validate(request.body);
+        if (body) {
+          validate!(body);
         }
 
+        await next();
+      });
+    }
+
+    bindFn(path, ...middleware);
+
+    bindFn(path, async (ctx, next) => {
+      try {
         const response = await action(ctx, next);
 
         if (response) {
