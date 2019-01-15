@@ -191,7 +191,7 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
     const bindFn = router[method].bind(router);
 
     if (debug) {
-      console.log(`\t${path}`);
+      console.log(`\t${method.toUpperCase()} ${path}`);
     }
 
     if (validate) {
