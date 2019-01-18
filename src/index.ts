@@ -245,3 +245,25 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
 export const createRouter = async (dir: string, debug = false) => {
   return createRouterRaw(await findRoutes(dir), debug);
 };
+
+export const propagateJsonErrors = (): Middleware => async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    ctx.status = err.status || 500;
+
+    if (ctx.status < 500 || process.env.NODE_ENV === 'development') {
+      ctx.body = {
+        success: false,
+        code: err.code || ctx.status,
+        message: err.message,
+      };
+    } else {
+      ctx.body = {
+        success: false,
+        code: err.code || ctx.status,
+        message: 'Internal server error (see logs)',
+      };
+    }
+  }
+};
