@@ -76,7 +76,7 @@ export interface RouteFactory<T> {
 
 export interface RouteWithContext<Ctx> {
   path: string;
-  method: HttpMethod;
+  method: HttpMethod | HttpMethod[];
   schema?: Schema;
   action: RouteActionWithContext<Ctx>;
   middleware?: Middleware[];
@@ -164,6 +164,8 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
       middleware = [],
     } = route;
 
+    const methods = Array.isArray(method) ? method : [method];
+
     let validate: ((body: any) => void) | undefined;
 
     if (schema) {
@@ -191,55 +193,57 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
       };
     }
 
-    // access the router.get function dynamically from HttpMethod strings
-    const bindFn = router[method].bind(router);
-
     if (debug) {
-      console.log(`\t${method.toUpperCase()} ${path}`);
+      console.log(`\t[${methods.map(m => m.toUpperCase()).join(', ')}] ${path}`);
     }
 
-    if (validate) {
-      bindFn(path, async (ctx, next) => {
-        // validation only works if bodyparser is present
-        const { body } = (ctx.request as any);
+    methods.forEach((method) => {
+      // access the router.get function dynamically from HttpMethod strings
+      const bindFn = router[method].bind(router);
 
-        if (body) {
-          validate!(body);
-        }
+      if (validate) {
+        bindFn(path, async (ctx, next) => {
+          // validation only works if bodyparser is present
+          const { body } = (ctx.request as any);
 
-        await next();
-      });
-    }
-
-    bindFn(path, ...middleware);
-
-    bindFn(path, async (ctx, next) => {
-      try {
-        const response = await action(ctx, next);
-
-        if (response) {
-          if (ctx.body) {
-            console.warn('overwriting ctx.body, which was set in a route handler');
+          if (body) {
+            validate!(body);
           }
 
-          ctx.body = response;
-        }
-      } catch (error) {
-        if (typeof error === 'string') {
-          error = new Error(error);
-        }
-
-        error.code = error.code || -1;
-        error.status = error.status || error.statusCode || 500;
-        error.internalMessage = error.message;
-
-        // don't reveal internal message unless you've opted-in by extending BaseError
-        if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
-          error.message = 'Internal server error (see logs)';
-        }
-
-        throw error;
+          await next();
+        });
       }
+
+      bindFn(path, ...middleware);
+
+      bindFn(path, async (ctx, next) => {
+        try {
+          const response = await action(ctx, next);
+
+          if (response) {
+            if (ctx.body) {
+              console.warn('overwriting ctx.body, which was set in a route handler');
+            }
+
+            ctx.body = response;
+          }
+        } catch (error) {
+          if (typeof error === 'string') {
+            error = new Error(error);
+          }
+
+          error.code = error.code || -1;
+          error.status = error.status || error.statusCode || 500;
+          error.internalMessage = error.message;
+
+          // don't reveal internal message unless you've opted-in by extending BaseError
+          if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
+            error.message = 'Internal server error (see logs)';
+          }
+
+          throw error;
+        }
+      });
     });
   });
 

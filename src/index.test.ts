@@ -473,3 +473,37 @@ test('flat nested routers', async () => {
 
   await new Promise(resolve => server.close(resolve));
 });
+
+test('multiple methods', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test',
+          method: [HttpMethod.GET, HttpMethod.POST],
+          async action(ctx, next) {
+            return { name: 'test' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const router = await createRouterRaw([factory]);
+
+  const app = new Koa();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  const server = app.listen();
+  const test = supertest.agent(server);
+
+  await test.get('/test').expect({ name: 'test' });
+  await test.post('/test').expect({ name: 'test' });
+  await test.put('/test').expect(405);
+
+  await new Promise(resolve => server.close(resolve));
+});
