@@ -250,7 +250,7 @@ export const propagateErrors = (): Middleware => async (ctx, next) => {
   try {
     await next();
   } catch (err) {
-    ctx.status = err.status || 500;
+    ctx.status = err.status || err.statusCode || 500;
 
     if (ctx.status < 500 || process.env.NODE_ENV === 'development') {
       ctx.body = {
