@@ -235,7 +235,7 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
 
         // don't reveal internal message unless you've opted-in by extending BaseError
         if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
-          error.message = 'Something went wrong';
+          error.message = 'Internal server error (see logs)';
         }
 
         throw error;
@@ -248,4 +248,26 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
 
 export const createRouter = async (dir: string, debug = false) => {
   return createRouterRaw(await findRoutes(dir), debug);
+};
+
+export const propagateErrors = (): Middleware => async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    ctx.status = err.status || err.statusCode || 500;
+
+    if (ctx.status < 500 || process.env.NODE_ENV === 'development') {
+      ctx.body = {
+        success: false,
+        code: err.code || ctx.status,
+        message: err.message,
+      };
+    } else {
+      ctx.body = {
+        success: false,
+        code: err.code || ctx.status,
+        message: 'Internal server error (see logs)',
+      };
+    }
+  }
 };
