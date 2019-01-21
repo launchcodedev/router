@@ -246,7 +246,7 @@ export const createRouter = async (dir: string, debug = false) => {
   return createRouterRaw(await findRoutes(dir), debug);
 };
 
-export const propagateJsonErrors = (): Middleware => async (ctx, next) => {
+export const propagateErrors = (): Middleware => async (ctx, next) => {
   try {
     await next();
   } catch (err) {
