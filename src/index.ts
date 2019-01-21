@@ -25,6 +25,10 @@ export class BaseError extends Error {
     this.code = code;
     this.statusCode = statusCode;
   }
+
+  static from(err: Error, code?: number, statusCode?: number) {
+    return new BaseError(err.message || err.toString(), code, statusCode);
+  }
 }
 
 export enum HttpMethod {
