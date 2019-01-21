@@ -231,7 +231,7 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
 
         // don't reveal internal message unless you've opted-in by extending BaseError
         if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
-          error.message = 'Something went wrong';
+          error.message = 'Internal server error (see logs)';
         }
 
         throw error;
