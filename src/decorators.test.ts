@@ -164,3 +164,7 @@ test('extract array of entity api fields', () => {
 test('extract plain object', () => {
   expect(extractApiFields({ foo: { bar: 'baz' } })).toEqual({ foo: { bar: 'baz' } });
 });
+
+test('extract plain string', () => {
+  expect(extractApiFields('bar')).toEqual('bar');
+});
