@@ -3,12 +3,17 @@ import { Middleware } from './index';
 const inject = (target: any, base = Object.getPrototypeOf(target)) => {
   if (!target.__apiFields) {
     // we inherit from a base class with __apiFields
-    if (base.__apiFields) {
-      Object.defineProperty(target, '__apiFields', { value: base.__apiFields });
-      Object.defineProperty(target, '__apiExcludeFields', { value: base.__apiExcludeFields });
-    } else {
-      Object.defineProperty(target, '__apiFields', { value: new Set() });
-      Object.defineProperty(target, '__apiExcludeFields', { value: new Set() });
+    Object.defineProperty(target, '__apiFields', { value: new Set() });
+    Object.defineProperty(target, '__apiExcludeFields', { value: new Set() });
+  }
+
+  if (base.__apiFields) {
+    for (const name of base.__apiFields) {
+      target.__apiFields.add(name);
+    }
+
+    for (const name of base.__apiExcludeFields) {
+      target.__apiExcludeFields.add(name);
     }
   }
 

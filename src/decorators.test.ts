@@ -240,3 +240,27 @@ test('base class api fields on both', () => {
     propertyB: 'b',
   });
 });
+
+test('double inheritance', () => {
+  @ApiFields()
+  class BaseBaseClass {
+    propertyA: string = 'a';
+  }
+
+  @ApiFields()
+  class BaseClass extends BaseBaseClass {
+    propertyB: string = 'b';
+  }
+
+  class MyEntity extends BaseClass {
+    @ApiField()
+    propertyC: string = 'c';
+  }
+
+  const x = new MyEntity();
+  expect(extractApiFields(x)).toEqual({
+    propertyA: 'a',
+    propertyB: 'b',
+    propertyC: 'c',
+  });
+});
