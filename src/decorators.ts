@@ -1,10 +1,15 @@
 import { Middleware } from './index';
 
-const inject = (target: any) => {
+const inject = (target: any, base = Object.getPrototypeOf(target)) => {
   if (!target.__apiFields) {
-    // we need a specific exclude property so that @ApiField({ exclude }) can override @ApiFields()
-    Object.defineProperty(target, '__apiFields', { value: new Set() });
-    Object.defineProperty(target, '__apiExcludeFields', { value: new Set() });
+    // we inherit from a base class with __apiFields
+    if (base.__apiFields) {
+      Object.defineProperty(target, '__apiFields', { value: base.__apiFields });
+      Object.defineProperty(target, '__apiExcludeFields', { value: base.__apiExcludeFields });
+    } else {
+      Object.defineProperty(target, '__apiFields', { value: new Set() });
+      Object.defineProperty(target, '__apiExcludeFields', { value: new Set() });
+    }
   }
 
   return target;
@@ -16,11 +21,7 @@ export const ApiField = ({ exclude = false } = {}) => function (target: any, nam
   if (exclude) {
     target.__apiFields.delete(name);
     target.__apiExcludeFields.add(name);
-  } else if (
-    true
-    && !target.__apiExcludeFields.has(name)
-    && !target.__apiFields.has(name)
-  ) {
+  } else if (!target.__apiExcludeFields.has(name) && !target.__apiFields.has(name)) {
     target.__apiFields.add(name);
   }
 };
@@ -31,13 +32,11 @@ type ApiFieldsOptions = {
 
 export const ApiFields = ({ exclude = [] }: ApiFieldsOptions = {}) => function (Class: any): any {
   // we wrap the original class, but adding __apiFields after the constructor is called
-  const Wrapped = function (...args: any[]) {
-    const instance = inject(new Class(...args));
+  const Wrapped = function (this: any, ...args: any[]) {
+    const instance = inject(new Class(...args), this);
 
     for (const name of Object.keys(instance)) {
-      if (
-        true
-        && !exclude.includes(name)
+      if (!exclude.includes(name)
         && !instance.__apiExcludeFields.has(name)
         && !instance.__apiFields.has(name)
       ) {
@@ -64,11 +63,7 @@ export const extractApiFields = (target: any): any => {
 
   const result: any = {};
   for (const field of target.__apiFields) {
-    if (target[field].__apiFields) {
-      result[field] = extractApiFields(target[field]);
-    } else {
-      result[field] = target[field];
-    }
+    result[field] = extractApiFields(target[field]);
   }
 
   return result;

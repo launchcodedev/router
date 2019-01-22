@@ -168,3 +168,75 @@ test('extract plain object', () => {
 test('extract plain string', () => {
   expect(extractApiFields('bar')).toEqual('bar');
 });
+
+test('base class', () => {
+  class BaseClass {
+    @ApiField()
+    propertyA: string = 'a';
+  }
+
+  class MyEntity extends BaseClass {
+    @ApiField()
+    propertyB: string = 'b';
+  }
+
+  const x = new MyEntity();
+  expect(extractApiFields(x)).toEqual({
+    propertyA: 'a',
+    propertyB: 'b',
+  });
+});
+
+test('base class api fields', () => {
+  @ApiFields()
+  class BaseClass {
+    propertyA: string = 'a';
+  }
+
+  class MyEntity extends BaseClass {
+    @ApiField()
+    propertyB: string = 'b';
+  }
+
+  const x = new MyEntity();
+  expect(extractApiFields(x)).toEqual({
+    propertyA: 'a',
+    propertyB: 'b',
+  });
+});
+
+test('extend class api fields', () => {
+  class BaseClass {
+    @ApiField()
+    propertyA: string = 'a';
+  }
+
+  @ApiFields()
+  class MyEntity extends BaseClass {
+    propertyB: string = 'b';
+  }
+
+  const x = new MyEntity();
+  expect(extractApiFields(x)).toEqual({
+    propertyA: 'a',
+    propertyB: 'b',
+  });
+});
+
+test('base class api fields on both', () => {
+  @ApiFields()
+  class BaseClass {
+    propertyA: string = 'a';
+  }
+
+  @ApiFields()
+  class MyEntity extends BaseClass {
+    propertyB: string = 'b';
+  }
+
+  const x = new MyEntity();
+  expect(extractApiFields(x)).toEqual({
+    propertyA: 'a',
+    propertyB: 'b',
+  });
+});
