@@ -524,7 +524,7 @@ test('api fields middleware', async () => {
     },
 
     middleware() {
-      return [ extractApiFieldsMiddleware() ];
+      return [extractApiFieldsMiddleware()];
     },
 
     create(dependencies: {}) {
