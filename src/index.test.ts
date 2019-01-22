@@ -6,6 +6,8 @@ import {
   HttpMethod,
   Context,
   Next,
+  ApiFields,
+  extractApiFieldsMiddleware,
   bindRouteActions,
   createRouterRaw,
 } from './index';
@@ -504,6 +506,57 @@ test('multiple methods', async () => {
   await test.get('/test').expect({ name: 'test' });
   await test.post('/test').expect({ name: 'test' });
   await test.put('/test').expect(405);
+
+  await new Promise(resolve => server.close(resolve));
+});
+
+test('api fields middleware', async () => {
+  @ApiFields({ exclude: ['b'] })
+  class MyEntity {
+    a: string = 'prop-a';
+    b: string = 'prop-b';
+    c: string = 'prop-c';
+  }
+
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [ extractApiFieldsMiddleware() ];
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test-1',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return new MyEntity();
+          },
+        },
+        {
+          path: '/test-2',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { rawResponse: true };
+          },
+        },
+      ]);
+    },
+  };
+
+  const router = await createRouterRaw([factory]);
+
+  const app = new Koa();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  const server = app.listen();
+  const test = supertest.agent(server);
+
+  await test.get('/test-1').expect({ a: 'prop-a', c: 'prop-c' });
+  await test.get('/test-2').expect({ rawResponse: true });
 
   await new Promise(resolve => server.close(resolve));
 });

@@ -3,6 +3,7 @@ import * as Router from 'koa-router';
 import * as fs from 'fs-extra';
 import * as Ajv from 'ajv';
 import { join } from 'path';
+export * from './decorators';
 
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
 type ReturnType<T> = T extends (...args: any) => infer R ? R : never;
