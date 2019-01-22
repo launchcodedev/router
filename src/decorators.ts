@@ -16,7 +16,11 @@ export const ApiField = ({ exclude = false } = {}) => function (target: any, nam
   if (exclude) {
     target.__apiFields.delete(name);
     target.__apiExcludeFields.add(name);
-  } else if (!target.__apiExcludeFields.has(name)) {
+  } else if (
+    true
+    && !target.__apiExcludeFields.has(name)
+    && !target.__apiFields.has(name)
+  ) {
     target.__apiFields.add(name);
   }
 };
@@ -31,7 +35,12 @@ export const ApiFields = ({ exclude = [] }: ApiFieldsOptions = {}) => function (
     const instance = inject(new Class(...args));
 
     for (const name of Object.keys(instance)) {
-      if (!exclude.includes(name) && !instance.__apiExcludeFields.has(name)) {
+      if (
+        true
+        && !exclude.includes(name)
+        && !instance.__apiExcludeFields.has(name)
+        && !instance.__apiFields.has(name)
+      ) {
         instance.__apiFields.add(name);
       }
     }
