@@ -230,7 +230,8 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
           } else if (response === undefined && ctx.body === undefined) {
             throw {
               status: 500,
-              message: `You did not return anything in the route '${path}'. If this was on purpose, please return 'false'`,
+              message: `You did not return anything in the route '${path}'.`
+                     + "If this was on purpose, please return 'false'",
             };
           } else if (!ctx.body) {
             ctx.status = 204;
