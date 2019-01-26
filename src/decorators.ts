@@ -38,22 +38,22 @@ type ApiFieldsOptions = {
 
 export const ApiFields = ({ exclude = [] }: ApiFieldsOptions = {}) => function (Class: any): any {
   // we wrap the original class, but adding __apiFields after the constructor is called
-  const Wrapped = function (this: any, ...args: any[]) {
-    const instance = inject(this, new Class(...args));
+  class Wrapped extends Class {
+    constructor(...args: any[]) {
+      super(...args);
 
-    for (const name of Object.keys(instance)) {
-      if (exclude.includes(name) || instance.__apiExcludeFields.has(name)) {
-        instance.__apiFields.delete(name);
-        instance.__apiExcludeFields.add(name);
-      } else if (!instance.__apiFields.has(name)) {
-        instance.__apiFields.add(name);
+      inject(this);
+
+      for (const name of Object.keys(this)) {
+        if (exclude.includes(name) || this.__apiExcludeFields.has(name)) {
+          this.__apiFields.delete(name);
+          this.__apiExcludeFields.add(name);
+        } else if (!this.__apiFields.has(name)) {
+          this.__apiFields.add(name);
+        }
       }
     }
-
-    return instance;
-  };
-
-  Wrapped.prototype = Object.create(Class.prototype);
+  }
 
   return Wrapped;
 };

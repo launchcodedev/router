@@ -299,7 +299,7 @@ test('exclude all in base class', () => {
   });
 });
 
-test('test', () => {
+test('methods', () => {
   @ApiFields()
   class BaseClass {
     foo() {
