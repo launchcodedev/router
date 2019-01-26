@@ -264,3 +264,37 @@ test('double inheritance', () => {
     propertyC: 'c',
   });
 });
+
+test('exclude in base class', () => {
+  class BaseClass {
+    @ApiField({ exclude: true })
+    propertyA: string = 'a';
+  }
+
+  @ApiFields()
+  class MyEntity extends BaseClass {
+    propertyB: string = 'b';
+  }
+
+  const x = new MyEntity();
+  expect(extractApiFields(x)).toEqual({
+    propertyB: 'b',
+  });
+});
+
+test('exclude all in base class', () => {
+  @ApiFields({ exclude: ['propertyA'] })
+  class BaseClass {
+    propertyA: string = 'a';
+  }
+
+  @ApiFields()
+  class MyEntity extends BaseClass {
+    propertyB: string = 'b';
+  }
+
+  const x = new MyEntity();
+  expect(extractApiFields(x)).toEqual({
+    propertyB: 'b',
+  });
+});

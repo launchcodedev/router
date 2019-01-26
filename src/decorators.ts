@@ -13,6 +13,7 @@ const inject = (target: any, base = Object.getPrototypeOf(target)) => {
     }
 
     for (const name of base.__apiExcludeFields) {
+      target.__apiFields.delete(name);
       target.__apiExcludeFields.add(name);
     }
   }
@@ -41,10 +42,10 @@ export const ApiFields = ({ exclude = [] }: ApiFieldsOptions = {}) => function (
     const instance = inject(new Class(...args), this);
 
     for (const name of Object.keys(instance)) {
-      if (!exclude.includes(name)
-        && !instance.__apiExcludeFields.has(name)
-        && !instance.__apiFields.has(name)
-      ) {
+      if (exclude.includes(name) || instance.__apiExcludeFields.has(name)) {
+        instance.__apiFields.delete(name);
+        instance.__apiExcludeFields.add(name);
+      } else if (!instance.__apiFields.has(name)) {
         instance.__apiFields.add(name);
       }
     }
