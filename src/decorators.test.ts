@@ -298,3 +298,23 @@ test('exclude all in base class', () => {
     propertyB: 'b',
   });
 });
+
+test('test', () => {
+  @ApiFields()
+  class BaseClass {
+    foo() {
+      return 1;
+    }
+  }
+
+  @ApiFields()
+  class MyEntity extends BaseClass {
+    bar()  {
+      return 2;
+    }
+  }
+
+  const x = new MyEntity();
+  expect(x.foo()).toBe(1);
+  expect(x.bar()).toBe(2);
+});
