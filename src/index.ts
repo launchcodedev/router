@@ -227,6 +227,14 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
             }
 
             ctx.body = response;
+          } else if (response === undefined && ctx.body === undefined) {
+            throw {
+              status: 500,
+              message: `You did not return anything in the route '${path}'.`
+                     + "If this was on purpose, please return 'false'",
+            };
+          } else if (!ctx.body) {
+            ctx.status = 204;
           }
         } catch (error) {
           if (typeof error === 'string') {

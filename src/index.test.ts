@@ -560,3 +560,67 @@ test('api fields middleware', async () => {
 
   await new Promise(resolve => server.close(resolve));
 });
+
+test('empty response', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test-1',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return false;
+          },
+        },
+      ]);
+    },
+  };
+
+  const router = await createRouterRaw([factory]);
+
+  const app = new Koa();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  const server = app.listen();
+  const test = supertest.agent(server);
+
+  await test.get('/test-1').expect(204);
+
+  await new Promise(resolve => server.close(resolve));
+});
+
+test('setting body', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test-1',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            ctx.body = { foo: 'bar' };
+          },
+        },
+      ]);
+    },
+  };
+
+  const router = await createRouterRaw([factory]);
+
+  const app = new Koa();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  const server = app.listen();
+  const test = supertest.agent(server);
+
+  await test.get('/test-1').expect({ foo: 'bar' });
+
+  await new Promise(resolve => server.close(resolve));
+});
