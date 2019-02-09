@@ -1,3 +1,5 @@
+import { routerTest } from '@servall/router-testing';
+import * as bodyparser from 'koa-bodyparser';
 import * as Koa from 'koa';
 import * as supertest from 'supertest';
 import {
@@ -7,11 +9,11 @@ import {
   Context,
   Next,
   ApiFields,
+  JSONSchema,
   extractApiFieldsMiddleware,
   bindRouteActions,
   createRouterFactories,
-  JSONSchema,
-  SchemaType,
+  propagateErrors,
 } from './index';
 import { ensureDir, writeJson, remove } from 'fs-extra';
 import { resolve } from 'path';
@@ -630,7 +632,14 @@ test('setting body', async () => {
 });
 
 test('load schema', async () => {
-  const testData = { aString: 'a string', aNumber: 1 };
+  const testData = {
+    type: 'object',
+    required: ['a', 'b'],
+    properties: {
+      a: { type: 'string' },
+      b: { type: 'string' },
+    },
+  };
   const testDir = resolve('./schemas');
   await ensureDir(testDir);
   await writeJson(`${testDir}/test.json`, testData);
@@ -639,8 +648,46 @@ test('load schema', async () => {
 
   expect(schema).toBeDefined();
   expect(schema).toBeInstanceOf(JSONSchema);
-  expect(schema.type).toEqual(SchemaType.JSON);
-  expect(schema.obj).toEqual(testData);
+  expect(schema.raw).toEqual(testData);
 
   await remove(testDir);
+});
+
+test('schema validation', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [
+        bodyparser(),
+        propagateErrors(),
+      ];
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test',
+          method: HttpMethod.POST,
+          schema: new JSONSchema({
+            type: 'object',
+            required: ['a', 'b'],
+          }),
+          async action(ctx, next) {
+            return true;
+          },
+        },
+      ]);
+    },
+  };
+
+  await routerTest(factory, {}, async (test) => {
+    await test.post('/test').send({ a: true, b: true })
+      .expect('true');
+
+    await test.post('/test')
+      .expect(400);
+  });
 });

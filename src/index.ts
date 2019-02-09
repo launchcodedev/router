@@ -46,23 +46,39 @@ export enum HttpMethod {
   all = 'all',
 }
 
-export enum SchemaType {
-  JSON,
-}
-
 export interface Schema {
-  type: SchemaType;
-  obj: object;
+  validate: (body: any) => true | Error;
 }
 
 export class JSONSchema implements Schema {
-  readonly type: SchemaType = SchemaType.JSON;
+  readonly ajvValidate: Ajv.ValidateFunction;
 
-  constructor(readonly obj: object) {}
+  constructor(readonly raw: object) {
+    this.ajvValidate = new Ajv().compile({
+      // default to draft 7, but of course the schema can just overwrite this
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      ...raw,
+    });
+  }
 
   static load(schemaName: string, schemaDir: string) {
     const path = resolveFrom(schemaDir, `./${schemaName}.json`);
     return new JSONSchema(require(path));
+  }
+
+  validate = (body: any) => {
+    const valid = this.ajvValidate(body);
+
+    if (valid) {
+      return true;
+    }
+
+    const err = this.ajvValidate.errors &&
+      this.ajvValidate.errors
+      .map(({ dataPath, message }) => `${dataPath}: ${message}`)
+      .join(', ');
+
+    return new BaseError(`validation error: [${err}]`, 400);
   }
 }
 
@@ -84,6 +100,7 @@ export interface RouteWithContext<Ctx> {
   schema?: Schema;
   action: RouteActionWithContext<Ctx>;
   middleware?: Middleware[];
+  routerMiddleware?: Middleware[];
 }
 
 export type Route = RouteWithContext<any>;
@@ -115,11 +132,8 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
     ...route,
     // add the prefix of the router to each Route
     path: join(factory.prefix || '', route.path),
-    // inject top level middleware ahead of the specific route's middleware
-    middleware: [
-      ...(routerMiddleware || []),
-      ...(route.middleware || []),
-    ],
+    middleware: route.middleware || [],
+    routerMiddleware: routerMiddleware || [],
   }));
 };
 
@@ -170,36 +184,10 @@ export const createRouterRaw = async (routes: Route[], debug = false) => {
       method,
       schema,
       middleware = [],
+      routerMiddleware = [],
     } = route;
 
     const methods = Array.isArray(method) ? method : [method];
-
-    let validate: ((body: any) => void) | undefined;
-
-    if (schema) {
-      if (schema.type !== SchemaType.JSON) {
-        throw new Error('non json schema not supported');
-      }
-
-      const validateSchema = ajv.compile({
-        // default to draft 7, but of course the schema can just overwrite this
-        $schema: 'http://json-schema.org/draft-07/schema#',
-        ...schema.obj,
-      });
-
-      validate = (body) => {
-        const valid = validateSchema(body);
-
-        if (!valid) {
-          const err = validateSchema.errors &&
-            validateSchema.errors
-            .map(({ dataPath, message }) => `${dataPath}: ${message}`)
-            .join(', ');
-
-          throw new BaseError(`validation error: [${err}]`, 400);
-        }
-      };
-    }
 
     if (debug) {
       console.log(`\t[${methods.map(m => m.toUpperCase()).join(', ')}] ${path}`);
@@ -209,13 +197,17 @@ export const createRouterRaw = async (routes: Route[], debug = false) => {
       // access the router.get function dynamically from HttpMethod strings
       const bindFn = router[method].bind(router);
 
-      if (validate) {
+      // router-level middleware comes before schema, action-level middleware comes after
+      bindFn(path, ...routerMiddleware);
+
+      if (schema) {
         bindFn(path, async (ctx, next) => {
-          // validation only works if bodyparser is present
           const { body } = (ctx.request as any);
 
-          if (body) {
-            validate!(body);
+          const result = schema.validate(body);
+
+          if (result !== true) {
+            throw result;
           }
 
           await next();
