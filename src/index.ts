@@ -83,7 +83,7 @@ export interface RouteWithContext<Ctx> {
   middleware?: Middleware[];
 }
 
-export type Route = RouteWithContext<void>;
+export type Route = RouteWithContext<any>;
 
 export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
   return routes.map(route => ({
