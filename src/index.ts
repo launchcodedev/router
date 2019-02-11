@@ -92,40 +92,45 @@ export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) =
   }));
 };
 
-const createRoutes = async (modules: RouteFactory<any>[]) => {
-  const routerRoutes: Route[][] = await Promise.all(modules.map(async (factory) => {
-    // inject dependencies
-    const dependencies = await factory.getDependencies();
-    const routes: Route[] = await factory.create(dependencies);
+export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
+  const routes: Route[] = await factory.create(deps);
 
-    let routerMiddleware: Middleware[] | undefined;
+  let routerMiddleware: Middleware[] | undefined;
 
-    if (factory.middleware) {
-      routerMiddleware = await factory.middleware(dependencies);
-    }
+  if (factory.middleware) {
+    routerMiddleware = await factory.middleware(deps);
+  }
 
-    if (factory.nested) {
-      const nested = await factory.nested(dependencies);
-      routes.push(...await createRoutes(nested));
-    }
+  if (factory.nested) {
+    const nested = await factory.nested(deps);
 
-    return routes.map(route => ({
-      ...route,
-      // add the prefix of the router to each Route
-      path: join(factory.prefix || '', route.path),
-      // inject top level middleware ahead of the specific route's middleware
-      middleware: [
-        ...(routerMiddleware || []),
-        ...(route.middleware || []),
-      ],
-    }));
+    // NOTE: dependencies cannot be injected here, which may be difficult for testing
+    routes.push(...await createAllRoutes(nested));
+  }
+
+  return routes.map(route => ({
+    ...route,
+    // add the prefix of the router to each Route
+    path: join(factory.prefix || '', route.path),
+    // inject top level middleware ahead of the specific route's middleware
+    middleware: [
+      ...(routerMiddleware || []),
+      ...(route.middleware || []),
+    ],
+  }));
+};
+
+export const createAllRoutes = async (factories: RouteFactory<any>[]) => {
+  // inject dependencies
+  const routerRoutes: Route[][] = await Promise.all(factories.map(async (factory) => {
+    return createRoutes(factory, await factory.getDependencies());
   }));
 
   // flatten all routes
   return routerRoutes.reduce<Route[]>((acc, routes) => acc.concat(routes), []);
 };
 
-export const findRoutes = async (dir: string): Promise<RouteFactory<any>[]> =>
+export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
   (await fs.readdir(dir))
     .filter(n => n.match(/\.(j|t)sx?$/))
     .filter(n => !n.match(/\.d\.ts$/))
@@ -146,8 +151,7 @@ export const findRoutes = async (dir: string): Promise<RouteFactory<any>[]> =>
       return factory;
     });
 
-export const createRouterRaw = async (modules: RouteFactory<any>[], debug = false) => {
-  const routes = await createRoutes(modules);
+export const createRouterRaw = async (routes: Route[], debug = false) => {
   const router = new Router();
   const ajv = new Ajv();
 
@@ -259,8 +263,14 @@ export const createRouterRaw = async (modules: RouteFactory<any>[], debug = fals
   return router;
 };
 
+export const createRouterFactories = async (factories: RouteFactory<any>[], debug = false) => {
+  const routes = await createAllRoutes(factories);
+  return createRouterRaw(routes, debug);
+};
+
 export const createRouter = async (dir: string, debug = false) => {
-  return createRouterRaw(await findRoutes(dir), debug);
+  const routes = await createAllRoutes(await findRouters(dir));
+  return createRouterRaw(routes, debug);
 };
 
 export const propagateErrors = (): Middleware => async (ctx, next) => {

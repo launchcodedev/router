@@ -9,7 +9,7 @@ import {
   ApiFields,
   extractApiFieldsMiddleware,
   bindRouteActions,
-  createRouterRaw,
+  createRouterFactories,
 } from './index';
 
 test('bindRouteActions', () => {
@@ -273,7 +273,7 @@ test('nested routers', async () => {
     },
   };
 
-  const router = await createRouterRaw([factory]);
+  const router = await createRouterFactories([factory]);
 
   const app = new Koa();
   app.use(router.routes());
@@ -331,7 +331,7 @@ test('nested router with prefix', async () => {
     },
   };
 
-  const router = await createRouterRaw([factory]);
+  const router = await createRouterFactories([factory]);
   const app = new Koa();
   app.use(router.routes());
   app.use(router.allowedMethods());
@@ -408,7 +408,7 @@ test('double nested router', async () => {
     },
   };
 
-  const router = await createRouterRaw([factory]);
+  const router = await createRouterFactories([factory]);
   const app = new Koa();
   app.use(router.routes());
   app.use(router.allowedMethods());
@@ -462,7 +462,7 @@ test('flat nested routers', async () => {
     },
   };
 
-  const router = await createRouterRaw([factory]);
+  const router = await createRouterFactories([factory]);
 
   const app = new Koa();
   app.use(router.routes());
@@ -495,7 +495,7 @@ test('multiple methods', async () => {
     },
   };
 
-  const router = await createRouterRaw([factory]);
+  const router = await createRouterFactories([factory]);
 
   const app = new Koa();
   app.use(router.routes());
@@ -547,7 +547,7 @@ test('api fields middleware', async () => {
     },
   };
 
-  const router = await createRouterRaw([factory]);
+  const router = await createRouterFactories([factory]);
 
   const app = new Koa();
   app.use(router.routes());
@@ -580,7 +580,7 @@ test('empty response', async () => {
     },
   };
 
-  const router = await createRouterRaw([factory]);
+  const router = await createRouterFactories([factory]);
 
   const app = new Koa();
   app.use(router.routes());
@@ -612,7 +612,7 @@ test('setting body', async () => {
     },
   };
 
-  const router = await createRouterRaw([factory]);
+  const router = await createRouterFactories([factory]);
 
   const app = new Koa();
   app.use(router.routes());
