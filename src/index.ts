@@ -57,15 +57,12 @@ export interface Schema {
 
 export class JSONSchema implements Schema {
   readonly type: SchemaType = SchemaType.JSON;
-  readonly obj: object;
 
-  constructor(schema: object) {
-    this.obj = schema;
-  }
+  constructor(readonly obj: object) {}
 
   static load(schemaName: string, schemaDir: string) {
     const path = resolveFrom(schemaDir, `./${schemaName}.json`);
-    return require(path);
+    return new JSONSchema(require(path));
   }
 }
 
