@@ -11,6 +11,7 @@ import {
   bindRouteActions,
   createRouterRaw,
   JSONSchema,
+  SchemaType,
 } from './index';
 import { ensureDir, writeJson, remove } from 'fs-extra';
 import { resolve } from 'path';
@@ -629,14 +630,17 @@ test('setting body', async () => {
 });
 
 test('load schema', async () => {
+  const testData = { aString: 'a string', aNumber: 1 };
   const testDir = resolve('./schemas');
   await ensureDir(testDir);
-  await writeJson(`${testDir}/test.json`, { test: true });
+  await writeJson(`${testDir}/test.json`, testData);
 
   const schema = JSONSchema.load('test', 'schemas');
 
   expect(schema).toBeDefined();
-  expect(schema.test).toEqual(true);
+  expect(schema).toBeInstanceOf(JSONSchema);
+  expect(schema.type).toEqual(SchemaType.JSON);
+  expect(schema.obj).toEqual(testData);
 
   await remove(testDir);
 });
