@@ -3,6 +3,7 @@ import * as Router from 'koa-router';
 import * as fs from 'fs-extra';
 import * as Ajv from 'ajv';
 import { join } from 'path';
+import * as resolveFrom from 'resolve-from';
 export * from './decorators';
 
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
@@ -56,10 +57,12 @@ export interface Schema {
 
 export class JSONSchema implements Schema {
   readonly type: SchemaType = SchemaType.JSON;
-  readonly obj: object;
 
-  constructor(schema: object) {
-    this.obj = schema;
+  constructor(readonly obj: object) {}
+
+  static load(schemaName: string, schemaDir: string) {
+    const path = resolveFrom(schemaDir, `./${schemaName}.json`);
+    return new JSONSchema(require(path));
   }
 }
 

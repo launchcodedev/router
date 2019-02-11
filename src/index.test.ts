@@ -10,7 +10,11 @@ import {
   extractApiFieldsMiddleware,
   bindRouteActions,
   createRouterFactories,
+  JSONSchema,
+  SchemaType,
 } from './index';
+import { ensureDir, writeJson, remove } from 'fs-extra';
+import { resolve } from 'path';
 
 test('bindRouteActions', () => {
   expect.assertions(1);
@@ -623,4 +627,20 @@ test('setting body', async () => {
   await test.get('/test-1').expect({ foo: 'bar' });
 
   await new Promise(resolve => server.close(resolve));
+});
+
+test('load schema', async () => {
+  const testData = { aString: 'a string', aNumber: 1 };
+  const testDir = resolve('./schemas');
+  await ensureDir(testDir);
+  await writeJson(`${testDir}/test.json`, testData);
+
+  const schema = JSONSchema.load('test', 'schemas');
+
+  expect(schema).toBeDefined();
+  expect(schema).toBeInstanceOf(JSONSchema);
+  expect(schema.type).toEqual(SchemaType.JSON);
+  expect(schema.obj).toEqual(testData);
+
+  await remove(testDir);
 });

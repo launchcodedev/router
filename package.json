@@ -40,6 +40,7 @@
     "@types/jest": "23",
     "@types/koa": "2",
     "@types/koa-router": "7",
+    "@types/resolve-from": "4",
     "@types/supertest": "2",
     "ajv": "6",
     "jest": "23",
@@ -59,6 +60,7 @@
     "koa-router": "7"
   },
   "dependencies": {
-    "fs-extra": "5"
+    "fs-extra": "5",
+    "resolve-from": "4"
   }
 }
