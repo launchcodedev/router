@@ -10,7 +10,11 @@ import {
   extractApiFieldsMiddleware,
   bindRouteActions,
   createRouterRaw,
+  JSONSchema,
 } from './index';
+import { ensureDir, writeJson, remove, pathExists } from 'fs-extra';
+import { resolve } from 'path';
+import resolveFrom = require('resolve-from');
 
 test('bindRouteActions', () => {
   expect.assertions(1);
@@ -623,4 +627,17 @@ test('setting body', async () => {
   await test.get('/test-1').expect({ foo: 'bar' });
 
   await new Promise(resolve => server.close(resolve));
+});
+
+test('load schema', async () => {
+  const testDir = resolve('./schemas');
+  await ensureDir(testDir);
+  await writeJson(`${testDir}/test.json`, { test: true });
+
+  const schema = JSONSchema.load('test', 'schemas');
+
+  expect(schema).toBeDefined();
+  expect(schema.test).toEqual(true);
+
+  await remove(testDir);
 });
