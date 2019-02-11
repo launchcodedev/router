@@ -12,9 +12,8 @@ import {
   createRouterRaw,
   JSONSchema,
 } from './index';
-import { ensureDir, writeJson, remove, pathExists } from 'fs-extra';
+import { ensureDir, writeJson, remove } from 'fs-extra';
 import { resolve } from 'path';
-import resolveFrom = require('resolve-from');
 
 test('bindRouteActions', () => {
   expect.assertions(1);
