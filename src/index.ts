@@ -47,7 +47,7 @@ export enum HttpMethod {
 }
 
 export interface Schema {
-  validate: (body: any) => true | Error;
+  validate: (body: any) => Promise<true | Error>;
 }
 
 export class JSONSchema implements Schema {
@@ -63,10 +63,11 @@ export class JSONSchema implements Schema {
 
   static load(schemaName: string, schemaDir: string) {
     const path = resolveFrom(schemaDir, `./${schemaName}.json`);
+
     return new JSONSchema(require(path));
   }
 
-  validate = (body: any) => {
+  validate = async (body: any) => {
     const valid = this.ajvValidate(body);
 
     if (valid) {
@@ -207,7 +208,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
         bindFn(path, async (ctx, next) => {
           const { body } = (ctx.request as any);
 
-          const result = schema.validate(body);
+          const result = await schema.validate(body);
 
           if (result !== true) {
             throw result;
