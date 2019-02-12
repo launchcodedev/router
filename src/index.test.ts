@@ -1,7 +1,6 @@
 import { routerTest } from '@servall/router-testing';
 import * as bodyparser from 'koa-bodyparser';
-import * as Koa from 'koa';
-import * as supertest from 'supertest';
+import { dir as tempDir } from 'tmp-promise';
 import {
   RouteFactory,
   RouteActionWithContext,
@@ -15,8 +14,8 @@ import {
   createRouterFactories,
   propagateErrors,
 } from './index';
-import { ensureDir, writeJson, remove } from 'fs-extra';
-import { resolve } from 'path';
+import { writeJson, remove } from 'fs-extra';
+import { join, resolve } from 'path';
 
 test('bindRouteActions', () => {
   expect.assertions(1);
@@ -608,11 +607,10 @@ test('load schema', async () => {
     },
   };
 
-  const testDir = resolve('./schemas');
-  await ensureDir(testDir);
-  await writeJson(`${testDir}/test.json`, testData);
+  const { path: testDir } = await tempDir();
+  await writeJson(join(testDir, 'test.json'), testData);
 
-  const schema = JSONSchema.load('test', 'schemas');
+  const schema = JSONSchema.load('test', testDir);
 
   expect(schema).toBeDefined();
   expect(schema).toBeInstanceOf(JSONSchema);
