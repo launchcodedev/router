@@ -20,6 +20,7 @@ import { resolve } from 'path';
 
 test('bindRouteActions', () => {
   expect.assertions(1);
+
   const routes = bindRouteActions({ foo: true }, [
     {
       path: '/',
@@ -73,12 +74,13 @@ test('router factory pattern', async () => {
     },
   };
 
-  const routes = await factory.create(await factory.getDependencies());
-  const res1 = await routes[0].action(null as any as Context, null as any as Next);
-  const res2 = await routes[1].action(null as any as Context, null as any as Next);
+  await routerTest(factory, await factory.getDependencies(), async (test) => {
+    await test.get('/prefixed/test1')
+      .expect({ foobar: 'baz' });
 
-  expect(res1).toEqual({ foobar: 'baz' });
-  expect(res2).toEqual({ foobar: 'baz' });
+    await test.get('/prefixed/test2')
+      .expect({ foobar: 'baz' });
+  });
 });
 
 test('router class pattern', async () => {
@@ -121,13 +123,13 @@ test('router class pattern', async () => {
     }
   }
 
-  const factory = new Test();
-  const routes = await factory.create(await factory.getDependencies());
-  const res1 = await routes[0].action(null as any as Context, null as any as Next);
-  const res2 = await routes[1].action(null as any as Context, null as any as Next);
+  await routerTest(new Test(), { foo: 'baz' }, async (test) => {
+    await test.get('/prefixed/test1')
+      .expect({ foobar: 'baz' });
 
-  expect(res1).toEqual({ foobar: 'baz' });
-  expect(res2).toEqual({ foobar: 'baz' });
+    await test.get('/prefixed/test2')
+      .expect({ foobar: 'baz' });
+  });
 });
 
 test('readme factory example', async () => {
@@ -161,6 +163,8 @@ test('readme factory example', async () => {
           method: HttpMethod.POST,
           async action(ctx, next) {
             this.db.isConnected = false;
+
+            return false;
           },
         },
         {
@@ -172,16 +176,16 @@ test('readme factory example', async () => {
     },
   };
 
-  const routes = await factory.create(await factory.getDependencies());
+  await routerTest(factory, await factory.getDependencies(), async (test) => {
+    await test.get('/db/status')
+      .expect({ connected: true });
 
-  const res1 = await routes[1].action(null as any as Context, null as any as Next);
-  expect(res1).toEqual({ connected: true });
+    await test.post('/db/disconnect')
+      .expect(204);
 
-  // trigger disconnect
-  await routes[0].action(null as any as Context, null as any as Next);
-
-  const res2 = await routes[1].action(null as any as Context, null as any as Next);
-  expect(res2).toEqual({ connected: false });
+    await test.get('/db/status')
+      .expect({ connected: false });
+  });
 });
 
 test('readme class example', async () => {
@@ -209,6 +213,8 @@ test('readme class example', async () => {
           method: HttpMethod.POST,
           async action(ctx, next) {
             this.db.isConnected = false;
+
+            return false;
           },
         },
         {
@@ -226,17 +232,16 @@ test('readme class example', async () => {
     }
   }
 
-  const factory = new DbRouter();
-  const routes = await factory.create(await factory.getDependencies());
+  await routerTest(new DbRouter(), await new DbRouter().getDependencies(), async (test) => {
+    await test.get('/db/status')
+      .expect({ connected: true });
 
-  const res1 = await routes[1].action(null as any as Context, null as any as Next);
-  expect(res1).toEqual({ connected: true });
+    await test.post('/db/disconnect')
+      .expect(204);
 
-  // trigger disconnect
-  await routes[0].action(null as any as Context, null as any as Next);
-
-  const res2 = await routes[1].action(null as any as Context, null as any as Next);
-  expect(res2).toEqual({ connected: false });
+    await test.get('/db/status')
+      .expect({ connected: false });
+  });
 });
 
 test('nested routers', async () => {
@@ -279,20 +284,18 @@ test('nested routers', async () => {
     },
   };
 
-  const router = await createRouterFactories([factory]);
-
-  const app = new Koa();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  const server = app.listen();
-  const test = supertest.agent(server);
-  await test.get('/all/top').expect({ name: 'top' });
-  await test.get('/all/nested').expect({ name: 'nested' });
-  await test.get('/all/invalid').expect(404);
-  await test.get('/top').expect(404);
-  await test.get('/nested').expect(404);
-
-  await new Promise(resolve => server.close(resolve));
+  await routerTest(factory, await factory.getDependencies(), async (test) => {
+    await test.get('/all/top')
+      .expect({ name: 'top' });
+    await test.get('/all/nested')
+      .expect({ name: 'nested' });
+    await test.get('/all/invalid')
+      .expect(404);
+    await test.get('/top')
+      .expect(404);
+    await test.get('/nested')
+      .expect(404);
+  });
 });
 
 test('nested router with prefix', async () => {
@@ -337,18 +340,14 @@ test('nested router with prefix', async () => {
     },
   };
 
-  const router = await createRouterFactories([factory]);
-  const app = new Koa();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  const server = app.listen();
-  const test = supertest.agent(server);
-
-  await test.get('/all/top').expect({ name: 'top' });
-  await test.get('/all/b/nested').expect({ name: 'nested' });
-  await test.get('/all/nested').expect(404);
-
-  await new Promise(resolve => server.close(resolve));
+  await routerTest(factory, await factory.getDependencies(), async (test) => {
+    await test.get('/all/top')
+      .expect({ name: 'top' });
+    await test.get('/all/b/nested')
+      .expect({ name: 'nested' });
+    await test.get('/all/nested')
+      .expect(404);
+  });
 });
 
 test('double nested router', async () => {
@@ -414,19 +413,16 @@ test('double nested router', async () => {
     },
   };
 
-  const router = await createRouterFactories([factory]);
-  const app = new Koa();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  const server = app.listen();
-  const test = supertest.agent(server);
-
-  await test.get('/all/top').expect({ name: 'top' });
-  await test.get('/all/b/a/nested').expect({ name: 'nested-a' });
-  await test.get('/all/b/nested').expect({ name: 'nested-b' });
-  await test.get('/all/nested').expect(404);
-
-  await new Promise(resolve => server.close(resolve));
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/all/top')
+      .expect({ name: 'top' });
+    await test.get('/all/b/a/nested')
+      .expect({ name: 'nested-a' });
+    await test.get('/all/b/nested')
+      .expect({ name: 'nested-b' });
+    await test.get('/all/nested')
+      .expect(404);
+  });
 });
 
 test('flat nested routers', async () => {
@@ -468,18 +464,14 @@ test('flat nested routers', async () => {
     },
   };
 
-  const router = await createRouterFactories([factory]);
-
-  const app = new Koa();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  const server = app.listen();
-  const test = supertest.agent(server);
-  await test.get('/top').expect({ name: 'top' });
-  await test.get('/nested').expect({ name: 'nested' });
-  await test.get('/invalid').expect(404);
-
-  await new Promise(resolve => server.close(resolve));
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/top')
+      .expect({ name: 'top' });
+    await test.get('/nested')
+      .expect({ name: 'nested' });
+    await test.get('/invalid')
+      .expect(404);
+  });
 });
 
 test('multiple methods', async () => {
@@ -501,19 +493,14 @@ test('multiple methods', async () => {
     },
   };
 
-  const router = await createRouterFactories([factory]);
-
-  const app = new Koa();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  const server = app.listen();
-  const test = supertest.agent(server);
-
-  await test.get('/test').expect({ name: 'test' });
-  await test.post('/test').expect({ name: 'test' });
-  await test.put('/test').expect(405);
-
-  await new Promise(resolve => server.close(resolve));
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/test')
+      .expect({ name: 'test' });
+    await test.post('/test')
+      .expect({ name: 'test' });
+    await test.put('/test')
+      .expect(405);
+  });
 });
 
 test('api fields middleware', async () => {
@@ -553,18 +540,12 @@ test('api fields middleware', async () => {
     },
   };
 
-  const router = await createRouterFactories([factory]);
-
-  const app = new Koa();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  const server = app.listen();
-  const test = supertest.agent(server);
-
-  await test.get('/test-1').expect({ a: 'prop-a', c: 'prop-c' });
-  await test.get('/test-2').expect({ rawResponse: true });
-
-  await new Promise(resolve => server.close(resolve));
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/test-1')
+      .expect({ a: 'prop-a', c: 'prop-c' });
+    await test.get('/test-2')
+      .expect({ rawResponse: true });
+  });
 });
 
 test('empty response', async () => {
@@ -586,17 +567,10 @@ test('empty response', async () => {
     },
   };
 
-  const router = await createRouterFactories([factory]);
-
-  const app = new Koa();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  const server = app.listen();
-  const test = supertest.agent(server);
-
-  await test.get('/test-1').expect(204);
-
-  await new Promise(resolve => server.close(resolve));
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/test-1')
+      .expect(204);
+  });
 });
 
 test('setting body', async () => {
@@ -618,17 +592,10 @@ test('setting body', async () => {
     },
   };
 
-  const router = await createRouterFactories([factory]);
-
-  const app = new Koa();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  const server = app.listen();
-  const test = supertest.agent(server);
-
-  await test.get('/test-1').expect({ foo: 'bar' });
-
-  await new Promise(resolve => server.close(resolve));
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/test-1')
+      .expect({ foo: 'bar' });
+  });
 });
 
 test('load schema', async () => {
@@ -640,6 +607,7 @@ test('load schema', async () => {
       b: { type: 'string' },
     },
   };
+
   const testDir = resolve('./schemas');
   await ensureDir(testDir);
   await writeJson(`${testDir}/test.json`, testData);
