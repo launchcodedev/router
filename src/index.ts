@@ -2,6 +2,7 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import * as fs from 'fs-extra';
 import * as Ajv from 'ajv';
+import * as yup from 'yup';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
 export * from './decorators';
@@ -80,6 +81,26 @@ export class JSONSchema implements Schema {
       .join(', ');
 
     return new BaseError(`validation error: [${err}]`, 400);
+  }
+}
+
+export class YupSchema<T> implements Schema {
+  constructor(readonly raw: yup.Schema<T>) {}
+
+  static create<T>(callback: (y: typeof yup) => yup.Schema<T>) {
+    return new YupSchema<T>(callback(yup));
+  }
+
+  validate = async (body: any) => {
+    try {
+      await this.raw.validate(body);
+
+      return true;
+    } catch ({ errors }) {
+      const err = errors.join(', ');
+
+      return new BaseError(`validation error: [${err}]`, 400);
+    }
   }
 }
 

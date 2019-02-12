@@ -45,6 +45,7 @@
     "@types/koa-router": "7",
     "@types/resolve-from": "4",
     "@types/supertest": "2",
+    "@types/yup": "0.26",
     "ajv": "6",
     "jest": "23",
     "koa": "2",
@@ -65,6 +66,7 @@
   },
   "dependencies": {
     "fs-extra": "5",
-    "resolve-from": "4"
+    "resolve-from": "4",
+    "yup": "0.26"
   }
 }

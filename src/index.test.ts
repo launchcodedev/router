@@ -9,6 +9,7 @@ import {
   Next,
   ApiFields,
   JSONSchema,
+  YupSchema,
   extractApiFieldsMiddleware,
   bindRouteActions,
   createRouterFactories,
@@ -619,7 +620,7 @@ test('load schema', async () => {
   await remove(testDir);
 });
 
-test('schema validation', async () => {
+test('json schema validation', async () => {
   const factory: RouteFactory<{}> = {
     getDependencies() {
       return {};
@@ -652,6 +653,54 @@ test('schema validation', async () => {
   await routerTest(factory, {}, async (test) => {
     await test.post('/test').send({ a: true, b: true })
       .expect('true');
+
+    await test.post('/test').send({})
+      .expect(400);
+
+    await test.post('/test')
+      .expect(400);
+  });
+});
+
+test('yup schema validation', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [
+        bodyparser(),
+        propagateErrors(),
+      ];
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test',
+          method: HttpMethod.POST,
+          schema: YupSchema.create(yup => yup.object().shape({
+            foo: yup.string().required(),
+            bar: yup.number(),
+          })),
+          async action(ctx, next) {
+            return true;
+          },
+        },
+      ]);
+    },
+  };
+
+  await routerTest(factory, {}, async (test) => {
+    await test.post('/test').send({ foo: 'string', bar: 101 })
+      .expect(200).expect('true');
+
+    await test.post('/test').send({ foo: 'string' })
+      .expect(200).expect('true');
+
+    await test.post('/test').send({ foo: 101, bar: 'string' })
+      .expect(400);
 
     await test.post('/test').send({})
       .expect(400);
