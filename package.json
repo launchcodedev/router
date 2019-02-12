@@ -56,17 +56,18 @@
     "ts-jest": "23",
     "tslint": "5",
     "tslint-config-airbnb": "5",
-    "typescript": "3"
+    "typescript": "3",
+    "yup": "0.26"
   },
   "peerDependencies": {
     "ajv": "6",
     "koa": "2",
     "koa-bodyparser": "4",
-    "koa-router": "7"
+    "koa-router": "7",
+    "yup": "0.26"
   },
   "dependencies": {
     "fs-extra": "5",
-    "resolve-from": "4",
-    "yup": "0.26"
+    "resolve-from": "4"
   }
 }
