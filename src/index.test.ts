@@ -653,6 +653,9 @@ test('schema validation', async () => {
     await test.post('/test').send({ a: true, b: true })
       .expect('true');
 
+    await test.post('/test').send({})
+      .expect(400);
+
     await test.post('/test')
       .expect(400);
   });
