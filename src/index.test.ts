@@ -15,7 +15,7 @@ import {
   createRouterFactories,
   propagateErrors,
 } from './index';
-import { writeJson, remove } from 'fs-extra';
+import { writeJson, outputFile, remove } from 'fs-extra';
 import { join, resolve } from 'path';
 
 test('bindRouteActions', () => {
@@ -612,6 +612,36 @@ test('load schema', async () => {
   await writeJson(join(testDir, 'test.json'), testData);
 
   const schema = JSONSchema.load('test', testDir);
+
+  expect(schema).toBeDefined();
+  expect(schema).toBeInstanceOf(JSONSchema);
+  expect(schema.raw).toEqual(testData);
+
+  await remove(testDir);
+});
+
+test('load yaml schema', async () => {
+  const testData = {
+    type: 'object',
+    required: ['a', 'b'],
+    properties: {
+      a: { type: 'string' },
+      b: { type: 'string' },
+    },
+  };
+
+  const { path: testDir } = await tempDir();
+  await outputFile(join(testDir, 'test.yml'), `
+    type: object
+    required: [a, b]
+    properties:
+      a:
+        type: string
+      b:
+        type: string
+  `);
+
+  const schema = JSONSchema.loadYaml('test', testDir);
 
   expect(schema).toBeDefined();
   expect(schema).toBeInstanceOf(JSONSchema);

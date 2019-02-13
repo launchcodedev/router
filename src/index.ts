@@ -3,6 +3,7 @@ import * as Router from 'koa-router';
 import * as fs from 'fs-extra';
 import * as Ajv from 'ajv';
 import * as yup from 'yup';
+import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
 export * from './decorators';
@@ -66,6 +67,12 @@ export class JSONSchema implements Schema {
     const path = resolveFrom(schemaDir, `./${schemaName}.json`);
 
     return new JSONSchema(require(path));
+  }
+
+  static loadYaml(schemaName: string, schemaDir: string, ext = 'yml') {
+    const path = resolveFrom(schemaDir, `./${schemaName}.${ext}`);
+    const contents = fs.readFileSync(path);
+    return new JSONSchema(YAML.safeLoad(contents.toString('utf8')));
   }
 
   validate = async (body: any) => {
