@@ -2,6 +2,8 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import * as fs from 'fs-extra';
 import * as Ajv from 'ajv';
+import * as yup from 'yup';
+import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
 export * from './decorators';
@@ -46,23 +48,66 @@ export enum HttpMethod {
   all = 'all',
 }
 
-export enum SchemaType {
-  JSON,
-}
-
 export interface Schema {
-  type: SchemaType;
-  obj: object;
+  validate: (body: any) => Promise<true | Error>;
 }
 
 export class JSONSchema implements Schema {
-  readonly type: SchemaType = SchemaType.JSON;
+  readonly ajvValidate: Ajv.ValidateFunction;
 
-  constructor(readonly obj: object) {}
+  constructor(readonly raw: object) {
+    this.ajvValidate = new Ajv().compile({
+      // default to draft 7, but of course the schema can just overwrite this
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      ...raw,
+    });
+  }
 
   static load(schemaName: string, schemaDir: string) {
     const path = resolveFrom(schemaDir, `./${schemaName}.json`);
+
     return new JSONSchema(require(path));
+  }
+
+  static loadYaml(schemaName: string, schemaDir: string, ext = 'yml') {
+    const path = resolveFrom(schemaDir, `./${schemaName}.${ext}`);
+    const contents = fs.readFileSync(path);
+    return new JSONSchema(YAML.safeLoad(contents.toString('utf8')));
+  }
+
+  validate = async (body: any) => {
+    const valid = this.ajvValidate(body);
+
+    if (valid) {
+      return true;
+    }
+
+    const err = this.ajvValidate.errors &&
+      this.ajvValidate.errors
+      .map(({ dataPath, message }) => `${dataPath}: ${message}`)
+      .join(', ');
+
+    return new BaseError(`validation error: [${err}]`, 400);
+  }
+}
+
+export class YupSchema<T> implements Schema {
+  constructor(readonly raw: yup.Schema<T>) {}
+
+  static create<T>(callback: (y: typeof yup) => yup.Schema<T>) {
+    return new YupSchema<T>(callback(yup));
+  }
+
+  validate = async (body: any) => {
+    try {
+      await this.raw.validate(body);
+
+      return true;
+    } catch ({ errors }) {
+      const err = errors.join(', ');
+
+      return new BaseError(`validation error: [${err}]`, 400);
+    }
   }
 }
 
@@ -87,6 +132,10 @@ export interface RouteWithContext<Ctx> {
 }
 
 export type Route = RouteWithContext<any>;
+
+type MadeRoute = Route & {
+  routerMiddleware: Middleware[];
+};
 
 export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
   return routes.map(route => ({
@@ -115,22 +164,19 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
     ...route,
     // add the prefix of the router to each Route
     path: join(factory.prefix || '', route.path),
-    // inject top level middleware ahead of the specific route's middleware
-    middleware: [
-      ...(routerMiddleware || []),
-      ...(route.middleware || []),
-    ],
+    middleware: route.middleware || [],
+    routerMiddleware: routerMiddleware || [],
   }));
 };
 
 export const createAllRoutes = async (factories: RouteFactory<any>[]) => {
   // inject dependencies
-  const routerRoutes: Route[][] = await Promise.all(factories.map(async (factory) => {
+  const routerRoutes = await Promise.all(factories.map(async (factory) => {
     return createRoutes(factory, await factory.getDependencies());
   }));
 
   // flatten all routes
-  return routerRoutes.reduce<Route[]>((acc, routes) => acc.concat(routes), []);
+  return routerRoutes.reduce<MadeRoute[]>((acc, routes) => acc.concat(routes), []);
 };
 
 export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
@@ -154,7 +200,7 @@ export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
       return factory;
     });
 
-export const createRouterRaw = async (routes: Route[], debug = false) => {
+export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
   const router = new Router();
   const ajv = new Ajv();
 
@@ -170,36 +216,10 @@ export const createRouterRaw = async (routes: Route[], debug = false) => {
       method,
       schema,
       middleware = [],
+      routerMiddleware = [],
     } = route;
 
     const methods = Array.isArray(method) ? method : [method];
-
-    let validate: ((body: any) => void) | undefined;
-
-    if (schema) {
-      if (schema.type !== SchemaType.JSON) {
-        throw new Error('non json schema not supported');
-      }
-
-      const validateSchema = ajv.compile({
-        // default to draft 7, but of course the schema can just overwrite this
-        $schema: 'http://json-schema.org/draft-07/schema#',
-        ...schema.obj,
-      });
-
-      validate = (body) => {
-        const valid = validateSchema(body);
-
-        if (!valid) {
-          const err = validateSchema.errors &&
-            validateSchema.errors
-            .map(({ dataPath, message }) => `${dataPath}: ${message}`)
-            .join(', ');
-
-          throw new BaseError(`validation error: [${err}]`, 400);
-        }
-      };
-    }
 
     if (debug) {
       console.log(`\t[${methods.map(m => m.toUpperCase()).join(', ')}] ${path}`);
@@ -209,13 +229,17 @@ export const createRouterRaw = async (routes: Route[], debug = false) => {
       // access the router.get function dynamically from HttpMethod strings
       const bindFn = router[method].bind(router);
 
-      if (validate) {
+      // router-level middleware comes before schema, action-level middleware comes after
+      bindFn(path, ...routerMiddleware);
+
+      if (schema) {
         bindFn(path, async (ctx, next) => {
-          // validation only works if bodyparser is present
           const { body } = (ctx.request as any);
 
-          if (body) {
-            validate!(body);
+          const result = await schema.validate(body);
+
+          if (result !== true) {
+            throw result;
           }
 
           await next();

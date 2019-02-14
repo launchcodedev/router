@@ -198,6 +198,24 @@ to you `action`.
 }
 ```
 
+You could alternatively use `JSONSchema.load('schemaName', 'directory')` to load a JSON file if it's large.
+
+We also support `yup` validation. Simply use the `YupSchema` class.
+
+```typescript
+{
+  path: '/resource/:id',
+  method: HttpMethod.POST,
+  schema: YupSchema.create(yup => yup.object().shape({
+    foo: yup.string().required(),
+    bar: yup.number(),
+  })),
+  async action(ctx) {
+    // ctx.request.body is valid at this point
+  },
+}
+```
+
 This does depend on having `koa-bodyparser` in your app.
 
 ### Nesting

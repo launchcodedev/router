@@ -1,6 +1,6 @@
 {
   "name": "@servall/router",
-  "version": "0.2.3-dev",
+  "version": "0.3.0-dev",
   "description": "Common koa routing for Servall",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,31 +36,40 @@
     }
   },
   "devDependencies": {
+    "@servall/router": "link:.",
+    "@servall/router-testing": "0.1",
     "@types/fs-extra": "5",
     "@types/jest": "23",
+    "@types/js-yaml": "3",
     "@types/koa": "2",
+    "@types/koa-bodyparser": "4",
     "@types/koa-router": "7",
     "@types/resolve-from": "4",
     "@types/supertest": "2",
+    "@types/yup": "0.26",
     "ajv": "6",
     "jest": "23",
     "koa": "2",
     "koa-bodyparser": "4",
     "koa-router": "7",
     "supertest": "3",
+    "tmp-promise": "1",
     "ts-jest": "23",
     "tslint": "5",
     "tslint-config-airbnb": "5",
-    "typescript": "3"
+    "typescript": "3",
+    "yup": "0.26"
   },
   "peerDependencies": {
     "ajv": "6",
     "koa": "2",
     "koa-bodyparser": "4",
-    "koa-router": "7"
+    "koa-router": "7",
+    "yup": "0.26"
   },
   "dependencies": {
     "fs-extra": "5",
+    "js-yaml": "3",
     "resolve-from": "4"
   }
 }
