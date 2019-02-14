@@ -16,7 +16,7 @@
   "scripts": {
     "build": "yarn clean && tsc",
     "clean": "rm -rf dist",
-    "prepublish": "yarn build",
+    "prepublishOnly": "yarn build",
     "lint": "tslint src/**/*.ts",
     "fix": "yarn lint --fix",
     "test": "jest"
