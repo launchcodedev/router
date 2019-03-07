@@ -1,0 +1,29 @@
+# 0.3.1
+
+- allows `ctx.status = 204`; router will set `ctx.body = ''` for you.
+- `propagateErrors` call allows full error messages to be returned for any environment other than `staging` and `production`.
+
+# 0.3.0
+
+- The order of middleware shifted slightly:
+
+  Router level middleware (the `middleware(deps) => Middleware[]`) will occur BEFORE schema validation, instead of after.
+  
+# 0.2.2
+
+- Adds `JSONSchema.load('schemaName', path.join(__dirname, '../my-schema-dir'))` which loads 'my-schema-dir/schemaName.json'
+
+# 0.2.1
+
+- quickfix for types
+
+# 0.2.0
+
+- API interface was changed slightly to allow better testing of your routes
+
+Note: This is only a breaking change if you were calling many of the route building functions directly.
+      Regular use of router would not be impacted by this.
+      
+# 0.1.12
+
+- `return false` in a route action sets `ctx.status = 204` for you.
