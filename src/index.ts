@@ -252,12 +252,12 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
         try {
           const response = await action(ctx, next);
 
-          if (response) {
+          if (response || ctx.status === 204) {
             if (ctx.body) {
               console.warn('overwriting ctx.body, which was set in a route handler');
             }
 
-            ctx.body = response;
+            ctx.body = response || '';
           } else if (response === undefined && ctx.body === undefined) {
             throw {
               status: 500,
