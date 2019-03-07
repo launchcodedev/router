@@ -13,6 +13,8 @@ type ReturnType<T> = T extends (...args: any) => infer R ? R : never;
 type ReplaceReturnType<T, R extends ReturnType<T>> = (...a: ArgumentTypes<T>) => R;
 type AddContext<T, TContext> = (this: TContext, ...a: ArgumentTypes<T>) => ReturnType<T>;
 
+const environmentProtectedLogs: (string | undefined)[] = ['staging', 'production'];
+
 export type Middleware = Router.IMiddleware;
 export type Context = Router.IRouterContext;
 export type Next = ArgumentTypes<Middleware>[1];
@@ -306,18 +308,18 @@ export const propagateErrors = (): Middleware => async (ctx, next) => {
   } catch (err) {
     ctx.status = err.status || err.statusCode || 500;
 
-    if (ctx.status < 500 || process.env.NODE_ENV === 'development') {
-      ctx.body = {
-        success: false,
-        code: err.code || ctx.status,
-        message: err.message,
-      };
-    } else {
-      ctx.body = {
-        success: false,
-        code: err.code || ctx.status,
-        message: 'Internal server error (see logs)',
-      };
-    }
+    ctx.body = {
+      success: false,
+      code: err.code || ctx.status,
+      message: filterMessage(ctx.status, err.message),
+    };
   }
+};
+
+const filterMessage = (status: number, errorMessage: string) => {
+  if (status >= 500 && environmentProtectedLogs.includes(process.env.NODE_ENV)) {
+    return 'Internal server error (see logs)';
+  }
+
+  return errorMessage;
 };
