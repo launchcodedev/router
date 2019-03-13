@@ -739,3 +739,51 @@ test('yup schema validation', async () => {
       .expect(400);
   });
 });
+
+test('query schema validation', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [
+        bodyparser(),
+        propagateErrors(),
+      ];
+    },
+
+    create(dependencies: {}) {
+      return [
+        {
+          path: '/test',
+          method: HttpMethod.POST,
+          querySchema: new JSONSchema({
+            additionalProperties: false,
+            required: ['x'],
+            properties: {
+              x: { type: 'string' },
+            },
+          }),
+          async action(ctx, next) {
+            return true;
+          },
+        },
+      ];
+    },
+  };
+
+  await routerTest(factory, {}, async (test) => {
+    await test.post('/test?x=2jk')
+      .expect(200).expect('true');
+
+    await test.post('/test?y=2jk')
+      .expect(400);
+
+    await test.post('/test?x=111')
+      .expect(200);
+
+    await test.post('/test')
+      .expect(400);
+  });
+});

@@ -129,6 +129,7 @@ export interface RouteWithContext<Ctx> {
   path: string;
   method: HttpMethod | HttpMethod[];
   schema?: Schema;
+  querySchema?: Schema;
   action: RouteActionWithContext<Ctx>;
   middleware?: Middleware[];
 }
@@ -217,6 +218,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
       action,
       method,
       schema,
+      querySchema,
       middleware = [],
       routerMiddleware = [],
     } = route;
@@ -239,6 +241,20 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
           const { body } = (ctx.request as any);
 
           const result = await schema.validate(body);
+
+          if (result !== true) {
+            throw result;
+          }
+
+          await next();
+        });
+      }
+
+      if (querySchema) {
+        bindFn(path, async (ctx, next) => {
+          const { query } = ctx.request;
+
+          const result = await querySchema.validate(query);
 
           if (result !== true) {
             throw result;
