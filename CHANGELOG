@@ -1,3 +1,7 @@
+# 0.3.3 (Skipped 0.3.2)
+
+- adds `querySchema` beside `schema` to validate incoming query strings - same interface and features as body schema validation
+
 # 0.3.1
 
 - allows `ctx.status = 204`; router will set `ctx.body = ''` for you.
@@ -5,13 +9,13 @@
 
 # 0.3.0
 
-- The order of middleware shifted slightly:
+- order of middleware shifted slightly:
 
   Router level middleware (the `middleware(deps) => Middleware[]`) will occur BEFORE schema validation, instead of after.
   
 # 0.2.2
 
-- Adds `JSONSchema.load('schemaName', path.join(__dirname, '../my-schema-dir'))` which loads 'my-schema-dir/schemaName.json'
+- adds `JSONSchema.load('schemaName', path.join(__dirname, '../my-schema-dir'))` which loads 'my-schema-dir/schemaName.json'
 
 # 0.2.1
 
