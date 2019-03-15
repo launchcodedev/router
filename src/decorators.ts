@@ -59,6 +59,10 @@ export const ApiFields = ({ exclude = [] }: ApiFieldsOptions = {}) => function (
 };
 
 export const extractApiFields = (target: any): any => {
+  if (!target) {
+    return target;
+  }
+
   if (Array.isArray(target)) {
     return target.map(extractApiFields);
   }
