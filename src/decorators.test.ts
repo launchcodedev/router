@@ -50,6 +50,26 @@ test('api field nested', () => {
     });
 });
 
+test('api field subclassing', () => {
+  class MyOtherEntity {
+    @ApiField()
+    propertyA: boolean = true;
+    propertyB: string = 'default';
+  }
+
+  class MyEntity extends MyOtherEntity {
+    @ApiField()
+    propertyC: number = 12;
+  }
+
+  expect(getApiFields(MyEntity)).toEqual({ propertyC: true, propertyA: true });
+  expect(extract(new MyEntity(), getApiFields(MyEntity)))
+    .toEqual({
+      propertyC: 12,
+      propertyA: true,
+    });
+});
+
 test('api field in returning', async () => {
   class MyEntity {
     propertyA: boolean = true;
