@@ -9,9 +9,7 @@ import {
   Next,
   JSONSchema,
   YupSchema,
-  extractApiFieldsMiddleware,
   bindRouteActions,
-  createRouterFactories,
   propagateErrors,
 } from './index';
 import { writeJson, outputFile, remove } from 'fs-extra';
