@@ -269,37 +269,101 @@ This will catch normalized errors, and return them in our standard json body for
 }
 ```
 
-### API Fields
-Often times, we have entities from our ORM that contain lots of properties that we don't want exposed.
-But it can be really taxing to do the destructuring boilerplate:
+### Extracting Returns
+Taking an example route action:
+```typescript
+{
+  path: '/users',
+  method: HttpMethod.GET,
+  async action(ctx, next) {
+    return myDatabase.select('* from user');
+  },
+},
+```
+
+You might prefer not to include the `password` field here (excuse the contrived example).
+
+To do so, the manual approach is:
 
 ```typescript
-async action(ctx) {
-  const user = await this.db.findUser({ id: ctx.state.user.id });
+const { values, to, return } = { ... };
 
-  const {
-    id,
-    username,
-    firstName,
-    secondName,
-    thirdName,
-    forthName,
-  } = user;
+return { values, to, return };
+```
 
-  return {
-    id,
-    username,
-    firstName,
-    secondName,
-    thirdName,
-    forthName,
-  };
+This is clearly not great. Lots of duplication and possibility for errors. It doesn't work
+for nesting objects well, and with multiple branches in an action, requires duplication.
+
+You might opt to use our `returning` field instead.
+
+```typescript
+{
+  path: '/users',
+  method: HttpMethod.GET,
+  returning: {
+    firstName: true,
+    lastName: true,
+    permissions: [{
+      role: true,
+      authority: ['access'],
+    }],
+  },
+  async action(ctx, next) {
+    return myDatabase.select('* from user');
+  },
+},
+```
+
+You can think of this as the inverse of `schema`. Some examples of this:
+
+```
+INPUT:
+{
+  firstName: 'Bob',
+  lastName: 'Albert',
+  password: 'secure!',
+  permissions: [
+    { role: 'admin', timestamp: new Date(), authority: { access: 33 } },
+    { role: 'user', timestamp: new Date(), extra: false },
+  ],
+}
+
+RETURNING:
+{
+  firstName: true,
+  lastName: true,
+  permissions: [{
+    role: true,
+    authority: ['access'],
+  }],
+}
+
+RESULT:
+{
+  firstName: 'Bob',
+  lastName: 'Albert',
+  permissions: [
+    { role: 'admin', authority: { access: 33 } },
+    { role: 'user' },
+  ],
 }
 ```
 
-This can be alleviated using our API Field decorators and middleware.
+Note a couple things:
 
-In your `User` entity:
+- `['access']` means "pull these fields from the object" - it's the same as `{ access: true }`
+- `[{ ... }]` means "map this array with this selector"
+- `{ foo: true }` means "take only 'foo'"
+
+Mismatching types, like an array selector when the return is an object, are ignored.
+
+This is pulled directly from the `@servall/mapper` package, you can read more there.
+
+### API Fields
+You might want to reduce the duplication when extracting return values. Most of the time,
+you want to return the same fields for the same entities, records, etc.
+
+You can use our decorator for just that:
 
 ```typescript
 import { ApiField } from '@servall/router';
@@ -317,36 +381,17 @@ class User extends BaseEntity {
 }
 ```
 
-Or alternatively, a blacklist instead of whitelist.
+In your route action, simply:
 
 ```typescript
-import { ApiFields } from '@servall/router';
+import { getApiFields } from '@servall/router';
 
-@ApiFields({
-  exclude: ['privateField'],
-})
-class User extends BaseEntity {
-  ...
-}
+{
+  path: '/users/:id',
+  method: HttpMethod.GET,
+  returning: getApiFields(User),
+  async action(ctx, next) {
+    return myDatabase.select('from user where id = $0', id);
+  },
+},
 ```
-
-Api fields are transitive - that is, a child of User with it's own ApiField
-rules abides by them when being extracted.
-
-To make this filtering do what you want, ensure that the middleware is set up.
-
-```typescript
-import { extractApiFieldsMiddleware } from '@servall/router';
-
-app.use(extractApiFieldsMiddleware());
-```
-
-This is flexible on purpose, so that you only pay the price/complexity of
-the filtering middleware where you need it. Obviously it's not a free operation,
-but it should be very close performance wise to the manual version.
-(not that this is very relevant)
-
-This middleware guarantees that objects that didn't have ApiFields are not
-affected at all.
-
-You can call `extractApiFields` directly on objects as well.
