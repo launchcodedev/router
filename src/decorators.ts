@@ -36,7 +36,9 @@ export const getApiFields = (klass: any): Extraction => {
   if (klass) {
     if (klass.getApiFields) {
       return klass.getApiFields();
-    }  if (klass.constructor.getApiFields) {
+    }
+
+    if (klass.constructor.getApiFields) {
       return klass.constructor.getApiFields();
     }
 
