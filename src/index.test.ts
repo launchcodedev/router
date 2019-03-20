@@ -7,7 +7,6 @@ import {
   HttpMethod,
   Context,
   Next,
-  ApiFields,
   JSONSchema,
   YupSchema,
   extractApiFieldsMiddleware,
@@ -503,51 +502,6 @@ test('multiple methods', async () => {
   });
 });
 
-test('api fields middleware', async () => {
-  @ApiFields({ exclude: ['b'] })
-  class MyEntity {
-    a: string = 'prop-a';
-    b: string = 'prop-b';
-    c: string = 'prop-c';
-  }
-
-  const factory: RouteFactory<{}> = {
-    getDependencies() {
-      return {};
-    },
-
-    middleware() {
-      return [extractApiFieldsMiddleware()];
-    },
-
-    create(dependencies: {}) {
-      return bindRouteActions(dependencies, [
-        {
-          path: '/test-1',
-          method: HttpMethod.GET,
-          async action(ctx, next) {
-            return new MyEntity();
-          },
-        },
-        {
-          path: '/test-2',
-          method: HttpMethod.GET,
-          async action(ctx, next) {
-            return { rawResponse: true };
-          },
-        },
-      ]);
-    },
-  };
-
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/test-1')
-      .expect({ a: 'prop-a', c: 'prop-c' });
-    await test.get('/test-2')
-      .expect({ rawResponse: true });
-  });
-});
-
 test('empty response', async () => {
   const factory: RouteFactory<{}> = {
     getDependencies() {
@@ -785,5 +739,62 @@ test('query schema validation', async () => {
 
     await test.post('/test')
       .expect(400);
+  });
+});
+
+test('extract response', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [
+        bodyparser(),
+        propagateErrors(),
+      ];
+    },
+
+    create(dependencies: {}) {
+      return [
+        {
+          path: '/test',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return {
+              name: 'Albert',
+              password: 'psswd',
+              access: {
+                permissions: ['admin'],
+                viewable: {
+                  resourceA: true,
+                  timestamp: new Date(),
+                },
+              },
+            };
+          },
+          returning: {
+            name: true,
+            access: {
+              permissions: true,
+              viewable: ['resourceA'],
+            },
+          },
+        },
+      ];
+    },
+  };
+
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/test')
+      .expect({
+        name: 'Albert',
+        access: {
+          permissions: ['admin'],
+          viewable: {
+            resourceA: true,
+          },
+        },
+      });
   });
 });

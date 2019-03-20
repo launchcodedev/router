@@ -1,3 +1,4 @@
+import { extract } from '@servall/mapper';
 import { Middleware } from './index';
 
 const inject = (target: any, base = Object.getPrototypeOf(target)) => {
@@ -30,32 +31,6 @@ export const ApiField = ({ exclude = false } = {}) => function (target: any, nam
   } else if (!target.__apiExcludeFields.has(name) && !target.__apiFields.has(name)) {
     target.__apiFields.add(name);
   }
-};
-
-type ApiFieldsOptions = {
-  exclude?: string[];
-};
-
-export const ApiFields = ({ exclude = [] }: ApiFieldsOptions = {}) => function (Class: any): any {
-  // we wrap the original class, but adding __apiFields after the constructor is called
-  class Wrapped extends Class {
-    constructor(...args: any[]) {
-      super(...args);
-
-      inject(this);
-
-      for (const name of Object.keys(this)) {
-        if (exclude.includes(name) || this.__apiExcludeFields.has(name)) {
-          this.__apiFields.delete(name);
-          this.__apiExcludeFields.add(name);
-        } else if (!this.__apiFields.has(name)) {
-          this.__apiFields.add(name);
-        }
-      }
-    }
-  }
-
-  return Wrapped;
 };
 
 export const extractApiFields = (target: any): any => {

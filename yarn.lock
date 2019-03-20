@@ -44,6 +44,11 @@
     reflect-metadata "^0.1.12"
     tslib "^1.8.1"
 
+"@servall/mapper@0.1":
+  version "0.1.1"
+  resolved "https://npm.servalldatasystems.com/@servall%2fmapper/-/mapper-0.1.1.tgz#594825b55c2cc848ded5ac06f338bfccd01da380"
+  integrity sha512-wuyvjNNl+LakvU4y+u3IdgFQWS+dKg9q4jz5s0uYy18P+YqBkO3QUaR7zH3LphFNHQWyIJi2f9MqSj78uQfF/A==
+
 "@servall/router-testing@0.1":
   version "0.1.0"
   resolved "https://npm.servalldatasystems.com/@servall%2frouter-testing/-/router-testing-0.1.0.tgz#10eb5ef6e6db4ffbb6c93c5b8be72eee90b05271"
