@@ -21,7 +21,7 @@ export const ApiField = (fieldType?: Function) => function (klass: any, name: st
     target.__apiFields[name] = fieldType || true;
   }
 
-  target.getApiFields = function() {
+  target.getApiFields = function () {
     const extract: any = {};
 
     Object.entries(target.__apiFields).forEach(([name, val]) => {
@@ -36,7 +36,7 @@ export const getApiFields = (klass: any): Extraction => {
   if (klass) {
     if (klass.getApiFields) {
       return klass.getApiFields();
-    } else if (klass.constructor.getApiFields) {
+    }  if (klass.constructor.getApiFields) {
       return klass.constructor.getApiFields();
     }
 
