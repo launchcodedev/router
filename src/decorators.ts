@@ -1,63 +1,48 @@
-import { extract } from '@servall/mapper';
+import { Extraction } from '@servall/mapper';
 import { Middleware } from './index';
 
 const inject = (target: any, base = Object.getPrototypeOf(target)) => {
   if (!target.__apiFields) {
     // we inherit from a base class with __apiFields
     Object.defineProperty(target, '__apiFields', { value: new Set() });
-    Object.defineProperty(target, '__apiExcludeFields', { value: new Set() });
   }
 
   if (base.__apiFields) {
     for (const name of base.__apiFields) {
       target.__apiFields.add(name);
     }
-
-    for (const name of base.__apiExcludeFields) {
-      target.__apiFields.delete(name);
-      target.__apiExcludeFields.add(name);
-    }
   }
 
   return target;
 };
 
-export const ApiField = ({ exclude = false } = {}) => function (target: any, name: string) {
-  inject(target);
+export const ApiField = () => function (klass: any, name: string) {
+  const target = inject(klass.constructor);
 
-  if (exclude) {
-    target.__apiFields.delete(name);
-    target.__apiExcludeFields.add(name);
-  } else if (!target.__apiExcludeFields.has(name) && !target.__apiFields.has(name)) {
+  if (!target.__apiFields.has(name)) {
     target.__apiFields.add(name);
   }
+
+  target.getApiFields = function getApiFields() {
+    const extract: any = {};
+
+    // TODO: use Object.fromEntries when landed in node
+    target.__apiFields.forEach((f: string) => (extract[f] = true));
+
+    return extract;
+  };
 };
 
-export const extractApiFields = (target: any): any => {
-  if (!target) {
-    return target;
+export const getApiFields = (klass: any): Extraction => {
+  if (klass) {
+    if (klass.getApiFields) {
+      return klass.getApiFields();
+    } else if (klass.constructor.getApiFields) {
+      return klass.constructor.getApiFields();
+    }
+
+    return {};
   }
 
-  if (Array.isArray(target)) {
-    return target.map(extractApiFields);
-  }
-
-  if (!target.__apiFields) {
-    return target;
-  }
-
-  const result: any = {};
-  for (const field of target.__apiFields) {
-    result[field] = extractApiFields(target[field]);
-  }
-
-  return result;
-};
-
-export const extractApiFieldsMiddleware = (): Middleware => async (ctx, next) => {
-  await next();
-
-  if (ctx.body) {
-    ctx.body = extractApiFields(ctx.body);
-  }
+  return {};
 };
