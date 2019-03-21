@@ -32,7 +32,7 @@ export const ApiField = (fieldType?: Function) => function (klass: any, name: st
   };
 };
 
-export const getApiFields = (klass: any): Extraction => {
+export const getApiFields = (klass: any): { [key: string]: Extraction } => {
   if (klass) {
     if (klass.getApiFields) {
       return klass.getApiFields();
