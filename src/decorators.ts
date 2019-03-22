@@ -14,11 +14,11 @@ const inject = (target: any, base = Object.getPrototypeOf(target)) => {
   return target;
 };
 
-export const ApiField = (fieldType?: Function) => function (klass: any, name: string) {
+export const ApiField = (fieldType?: () => Function) => function (klass: any, name: string) {
   const target = inject(klass.constructor);
 
   if (!target.__apiFields[name]) {
-    target.__apiFields[name] = fieldType || true;
+    target.__apiFields[name] = fieldType ? fieldType() : true;
   }
 
   target.getApiFields = function () {

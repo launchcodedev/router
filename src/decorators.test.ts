@@ -36,7 +36,7 @@ test('api field nested', () => {
     @ApiField()
     propertyC: number = 12;
 
-    @ApiField(MyOtherEntity)
+    @ApiField(() => MyOtherEntity)
     other?: MyOtherEntity = new MyOtherEntity();
   }
 
