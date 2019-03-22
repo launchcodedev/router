@@ -44,6 +44,7 @@
     "@types/koa": "2",
     "@types/koa-bodyparser": "4",
     "@types/koa-router": "7",
+    "@types/lodash": "4",
     "@types/resolve-from": "4",
     "@types/supertest": "2",
     "@types/yup": "0.26",
@@ -71,6 +72,7 @@
     "@servall/mapper": "0.1",
     "fs-extra": "5",
     "js-yaml": "3",
+    "lodash": "4",
     "resolve-from": "4"
   }
 }

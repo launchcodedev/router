@@ -1,3 +1,4 @@
+import { merge } from 'lodash';
 import { Extraction } from '@servall/mapper';
 import { Middleware } from './index';
 
@@ -30,18 +31,18 @@ export const ApiField = (fieldType?: () => Function) => function (klass: any, na
   };
 };
 
-export const getApiFields = (klass: any): { [key: string]: Extraction } => {
+export const getApiFields = (klass: any, and?: object): { [key: string]: Extraction } => {
+  let fields = {};
+
   if (klass) {
     if (klass.getApiFields) {
-      return klass.getApiFields();
+      fields = klass.getApiFields();
     }
 
     if (klass.constructor.getApiFields) {
-      return klass.constructor.getApiFields();
+      fields = klass.constructor.getApiFields();
     }
-
-    return {};
   }
 
-  return {};
+  return merge(fields, and || {});
 };

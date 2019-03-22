@@ -116,3 +116,17 @@ test('api field in returning', async () => {
       });
   });
 });
+
+test('api field merging', () => {
+  class MyEntity {
+    @ApiField()
+    propertyA: boolean = true;
+    propertyB: string = 'default';
+
+    @ApiField()
+    propertyC: number = 12;
+  }
+
+  expect(getApiFields(MyEntity, { propertyA: false }))
+    .toEqual({ propertyA: false, propertyC: true });
+});
