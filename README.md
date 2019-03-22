@@ -377,6 +377,9 @@ class User extends BaseEntity {
   @ApiField()
   firstName: string;
 
+  @ApiField(() => Permission)
+  permission: Permission;
+
   ...
 }
 ```
