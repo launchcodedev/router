@@ -50,6 +50,35 @@ test('api field nested', () => {
     });
 });
 
+test('api field arr', () => {
+  class MyOtherEntity {
+    @ApiField()
+    propertyA: boolean = true;
+    propertyB: string = 'default';
+  }
+
+  class MyEntity {
+    propertyA: boolean = true;
+    propertyB: string = 'default';
+
+    @ApiField()
+    propertyC: number = 12;
+
+    @ApiField(() => [MyOtherEntity])
+    other?: MyOtherEntity[] = [new MyOtherEntity(), new MyOtherEntity()];
+  }
+
+  expect(getApiFields(MyEntity)).toEqual({ propertyC: true, other: [{ propertyA: true }] });
+  expect(extract(new MyEntity(), getApiFields(MyEntity)))
+    .toEqual({
+      propertyC: 12,
+      other: [
+        { propertyA: true },
+        { propertyA: true },
+      ],
+    });
+});
+
 test('api field subclassing', () => {
   class MyOtherEntity {
     @ApiField()

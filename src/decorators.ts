@@ -13,23 +13,35 @@ const inject = (target: any, base = Object.getPrototypeOf(target)) => {
   return target;
 };
 
-export const ApiField = (fieldType?: () => Function) => function (klass: any, name: string) {
-  const target = inject(klass.constructor);
+export const ApiField = (fieldType?: () => Function | [Function]) =>
+  function (klass: any, name: string) {
+    const target = inject(klass.constructor);
 
-  if (!target.__apiFields[name]) {
-    target.__apiFields[name] = fieldType ? fieldType : true;
-  }
+    if (!target.__apiFields[name]) {
+      target.__apiFields[name] = fieldType ? fieldType : true;
+    }
 
-  target.getApiFields = function () {
-    const extract: any = {};
+    target.getApiFields = function () {
+      const extract: any = {};
 
-    Object.entries(target.__apiFields as PrivateApiFields).forEach(([name, val]) => {
-      extract[name] = val === true ? true : getApiFields(val());
-    });
+      Object.entries(target.__apiFields as PrivateApiFields).forEach(([name, val]) => {
+        if (val === true) {
+          extract[name] = true;
+        } else {
+          const nested = val();
 
-    return extract;
+          // @ApiField(() => [Type]) for array mapping is special
+          if (Array.isArray(nested) && nested.length === 1) {
+            extract[name] = [getApiFields(nested[0])];
+          } else {
+            extract[name] = getApiFields(nested);
+          }
+        }
+      });
+
+      return extract;
+    };
   };
-};
 
 export const getApiFields = (klass: any, and?: object): { [key: string]: Extraction } => {
   let fields = {};
