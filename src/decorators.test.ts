@@ -99,6 +99,21 @@ test('api field subclassing', () => {
     });
 });
 
+test('api field with custom type', () => {
+  class MyEntity {
+    @ApiField({ baz: true })
+    propertyC: object = { foo: 'bar', baz: 'bat' };
+  }
+
+  expect(getApiFields(MyEntity)).toEqual({ propertyC: { baz: true } });
+  expect(extract(new MyEntity(), getApiFields(MyEntity)))
+    .toEqual({
+      propertyC: {
+        baz: 'bat',
+      },
+    });
+});
+
 test('api field in returning', async () => {
   class MyEntity {
     propertyA: boolean = true;

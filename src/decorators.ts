@@ -13,7 +13,7 @@ const inject = (target: any, base = Object.getPrototypeOf(target)) => {
   return target;
 };
 
-export const ApiField = (fieldType?: () => Function | [Function]) =>
+export const ApiField = (fieldType?: Extraction | (() => Function | [Function])) =>
   function (klass: any, name: string) {
     const target = inject(klass.constructor);
 
@@ -28,12 +28,19 @@ export const ApiField = (fieldType?: () => Function | [Function]) =>
         if (val === true) {
           extract[name] = true;
         } else {
+          // @ApiField({ foo: true })
+          if (typeof val !== 'function') {
+            extract[name] = val;
+            return;
+          }
+
           const nested = val();
 
-          // @ApiField(() => [Type]) for array mapping is special
           if (Array.isArray(nested) && nested.length === 1) {
+            // @ApiField(() => [Type]) for array mapping is special
             extract[name] = [getApiFields(nested[0])];
           } else {
+            // @ApiField(() => Type)
             extract[name] = getApiFields(nested);
           }
         }

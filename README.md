@@ -398,3 +398,9 @@ import { getApiFields } from '@servall/router';
   },
 },
 ```
+
+Possibilities:
+- `@ApiField() property` means take all of `property`
+- `@ApiField(() => PropertyType) property` means take ApiFields of `property`
+- `@ApiField(() => [PropertyType]) property[]` means take ApiFields of all `property`s
+- `@ApiField({ ... }) property` means take `{ ... }` from `property`
