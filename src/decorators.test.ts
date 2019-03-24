@@ -1,4 +1,13 @@
-import { ApiField, ApiFields, extractApiFields } from './decorators';
+import { routerTest } from '@servall/router-testing';
+import * as bodyparser from 'koa-bodyparser';
+import { extract } from '@servall/mapper';
+import { ApiField, getApiFields } from './decorators';
+import {
+  RouteFactory,
+  HttpMethod,
+  bindRouteActions,
+  propagateErrors,
+} from './index';
 
 test('api field', () => {
   class MyEntity {
@@ -9,81 +18,15 @@ test('api field', () => {
     propertyC: number = 12;
   }
 
-  const x = new MyEntity();
-  expect((x as any).__apiFields).toEqual(new Set(['propertyC']));
+  expect(getApiFields(MyEntity)).toEqual({ propertyC: true });
+  expect(extract(new MyEntity(), getApiFields(MyEntity))).toEqual({ propertyC: 12 });
 });
 
-test('api fields', () => {
-  @ApiFields()
-  class MyEntity {
-    propertyA: boolean = true;
-    propertyB: string = 'default';
-    propertyC: number = 12;
-  }
-
-  const x = new MyEntity();
-  expect((x as any).__apiFields).toEqual(new Set(['propertyA', 'propertyB', 'propertyC']));
-});
-
-test('api fields exclude', () => {
-  @ApiFields({ exclude: ['propertyC'] })
-  class MyEntity {
-    propertyA: boolean = true;
-    propertyB: string = 'default';
-    propertyC: number = 12;
-  }
-
-  const x = new MyEntity();
-  expect(((x as any).__apiFields)).toEqual(new Set(['propertyA', 'propertyB']));
-});
-
-test('api field exclude', () => {
-  @ApiFields()
-  class MyEntity {
-    propertyA: boolean = true;
-    propertyB: string = 'default';
-    @ApiField({ exclude: true })
-    propertyC: number = 12;
-  }
-
-  const x = new MyEntity();
-  expect(((x as any).__apiFields)).toEqual(new Set(['propertyA', 'propertyB']));
-});
-
-test('api fields constructor', () => {
-  @ApiFields()
-  class MyEntity {
-    a: number;
-    b: number;
-    constructor(a: number, b: number) {
-      this.a = a;
-      this.b = b;
-    }
-  }
-
-  const x = new MyEntity(1, 2);
-  expect(x.a).toBe(1);
-  expect(x.b).toBe(2);
-});
-
-test('extract api field', () => {
-  class MyEntity {
-    propertyA: boolean = true;
-    propertyB: string = 'default';
-
+test('api field nested', () => {
+  class MyOtherEntity {
     @ApiField()
-    propertyC: number = 12;
-  }
-
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({ propertyC: 12 });
-});
-
-test('extract nested api fields', () => {
-  class ChildEntity {
-    @ApiField()
-    propertyA: number = 101;
-    propertyB: string = 'baz';
+    propertyA: boolean = true;
+    propertyB: string = 'default';
   }
 
   class MyEntity {
@@ -93,228 +36,141 @@ test('extract nested api fields', () => {
     @ApiField()
     propertyC: number = 12;
 
-    @ApiField()
-    propertyD: ChildEntity = new ChildEntity();
+    @ApiField(() => MyOtherEntity)
+    other?: MyOtherEntity = new MyOtherEntity();
   }
 
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({
-    propertyC: 12,
-    propertyD: {
-      propertyA: 101,
-    },
-  });
-});
-
-test('extract array of entity api fields', () => {
-  @ApiFields()
-  class ChildEntity {
-    constructor(a: number) {
-      this.propertyA = a;
-    }
-
-    propertyA: number;
-    propertyB: string = 'baz';
-  }
-
-  class MyEntity {
-    constructor(d: number) {
-      this.propertyD = new ChildEntity(d);
-    }
-
-    propertyA: boolean = true;
-    propertyB: string = 'default';
-
-    @ApiField()
-    propertyC: number = 12;
-
-    @ApiField()
-    propertyD: ChildEntity;
-  }
-
-  expect(extractApiFields([
-    new MyEntity(1),
-    new MyEntity(2),
-    new MyEntity(3),
-  ])).toEqual([
-    {
+  expect(getApiFields(MyEntity)).toEqual({ propertyC: true, other: { propertyA: true } });
+  expect(extract(new MyEntity(), getApiFields(MyEntity)))
+    .toEqual({
       propertyC: 12,
-      propertyD: {
-        propertyA: 1,
-        propertyB: 'baz',
+      other: {
+        propertyA: true,
       },
-    },
-    {
+    });
+});
+
+test('api field arr', () => {
+  class MyOtherEntity {
+    @ApiField()
+    propertyA: boolean = true;
+    propertyB: string = 'default';
+  }
+
+  class MyEntity {
+    propertyA: boolean = true;
+    propertyB: string = 'default';
+
+    @ApiField()
+    propertyC: number = 12;
+
+    @ApiField(() => [MyOtherEntity])
+    other?: MyOtherEntity[] = [new MyOtherEntity(), new MyOtherEntity()];
+  }
+
+  expect(getApiFields(MyEntity)).toEqual({ propertyC: true, other: [{ propertyA: true }] });
+  expect(extract(new MyEntity(), getApiFields(MyEntity)))
+    .toEqual({
       propertyC: 12,
-      propertyD: {
-        propertyA: 2,
-        propertyB: 'baz',
-      },
-    },
-    {
+      other: [
+        { propertyA: true },
+        { propertyA: true },
+      ],
+    });
+});
+
+test('api field subclassing', () => {
+  class MyOtherEntity {
+    @ApiField()
+    propertyA: boolean = true;
+    propertyB: string = 'default';
+  }
+
+  class MyEntity extends MyOtherEntity {
+    @ApiField()
+    propertyC: number = 12;
+  }
+
+  expect(getApiFields(MyEntity)).toEqual({ propertyC: true, propertyA: true });
+  expect(extract(new MyEntity(), getApiFields(MyEntity)))
+    .toEqual({
       propertyC: 12,
-      propertyD: {
-        propertyA: 3,
-        propertyB: 'baz',
+      propertyA: true,
+    });
+});
+
+test('api field with custom type', () => {
+  class MyEntity {
+    @ApiField({ baz: true })
+    propertyC: object = { foo: 'bar', baz: 'bat' };
+  }
+
+  expect(getApiFields(MyEntity)).toEqual({ propertyC: { baz: true } });
+  expect(extract(new MyEntity(), getApiFields(MyEntity)))
+    .toEqual({
+      propertyC: {
+        baz: 'bat',
       },
+    });
+});
+
+test('api field in returning', async () => {
+  class MyEntity {
+    propertyA: boolean = true;
+
+    @ApiField()
+    propertyB: string = 'default';
+
+    @ApiField()
+    propertyC: number = 12;
+  }
+
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
     },
-  ]);
+
+    middleware() {
+      return [
+        bodyparser(),
+        propagateErrors(),
+      ];
+    },
+
+    create(dependencies: {}) {
+      return [
+        {
+          path: '/test',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return new MyEntity();
+          },
+          returning: getApiFields(MyEntity),
+        },
+      ];
+    },
+  };
+
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/test')
+      .expect({
+        // note no propertyA
+        propertyB: 'default',
+        propertyC: 12,
+      });
+  });
 });
 
-test('extract plain object', () => {
-  expect(extractApiFields({ foo: { bar: 'baz' } })).toEqual({ foo: { bar: 'baz' } });
-});
-
-test('extract plain string', () => {
-  expect(extractApiFields('bar')).toEqual('bar');
-});
-
-test('base class', () => {
-  class BaseClass {
+test('api field merging', () => {
+  class MyEntity {
     @ApiField()
-    propertyA: string = 'a';
-  }
+    propertyA: boolean = true;
+    propertyB: string = 'default';
 
-  class MyEntity extends BaseClass {
     @ApiField()
-    propertyB: string = 'b';
+    propertyC: number = 12;
   }
 
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({
-    propertyA: 'a',
-    propertyB: 'b',
-  });
-});
-
-test('base class api fields', () => {
-  @ApiFields()
-  class BaseClass {
-    propertyA: string = 'a';
-  }
-
-  class MyEntity extends BaseClass {
-    @ApiField()
-    propertyB: string = 'b';
-  }
-
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({
-    propertyA: 'a',
-    propertyB: 'b',
-  });
-});
-
-test('extend class api fields', () => {
-  class BaseClass {
-    @ApiField()
-    propertyA: string = 'a';
-  }
-
-  @ApiFields()
-  class MyEntity extends BaseClass {
-    propertyB: string = 'b';
-  }
-
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({
-    propertyA: 'a',
-    propertyB: 'b',
-  });
-});
-
-test('base class api fields on both', () => {
-  @ApiFields()
-  class BaseClass {
-    propertyA: string = 'a';
-  }
-
-  @ApiFields()
-  class MyEntity extends BaseClass {
-    propertyB: string = 'b';
-  }
-
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({
-    propertyA: 'a',
-    propertyB: 'b',
-  });
-});
-
-test('double inheritance', () => {
-  @ApiFields()
-  class BaseBaseClass {
-    propertyA: string = 'a';
-  }
-
-  @ApiFields()
-  class BaseClass extends BaseBaseClass {
-    propertyB: string = 'b';
-  }
-
-  class MyEntity extends BaseClass {
-    @ApiField()
-    propertyC: string = 'c';
-  }
-
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({
-    propertyA: 'a',
-    propertyB: 'b',
-    propertyC: 'c',
-  });
-});
-
-test('exclude in base class', () => {
-  class BaseClass {
-    @ApiField({ exclude: true })
-    propertyA: string = 'a';
-  }
-
-  @ApiFields()
-  class MyEntity extends BaseClass {
-    propertyB: string = 'b';
-  }
-
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({
-    propertyB: 'b',
-  });
-});
-
-test('exclude all in base class', () => {
-  @ApiFields({ exclude: ['propertyA'] })
-  class BaseClass {
-    propertyA: string = 'a';
-  }
-
-  @ApiFields()
-  class MyEntity extends BaseClass {
-    propertyB: string = 'b';
-  }
-
-  const x = new MyEntity();
-  expect(extractApiFields(x)).toEqual({
-    propertyB: 'b',
-  });
-});
-
-test('methods', () => {
-  @ApiFields()
-  class BaseClass {
-    foo() {
-      return 1;
-    }
-  }
-
-  @ApiFields()
-  class MyEntity extends BaseClass {
-    bar()  {
-      return 2;
-    }
-  }
-
-  const x = new MyEntity();
-  expect(x.foo()).toBe(1);
-  expect(x.bar()).toBe(2);
+  expect(getApiFields(MyEntity, { propertyA: false }))
+    .toEqual({ propertyA: false, propertyC: true });
 });

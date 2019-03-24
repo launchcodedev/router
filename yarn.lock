@@ -44,6 +44,11 @@
     reflect-metadata "^0.1.12"
     tslib "^1.8.1"
 
+"@servall/mapper@0.1":
+  version "0.1.3"
+  resolved "https://npm.servalldatasystems.com/@servall%2fmapper/-/mapper-0.1.3.tgz#485ec87c286c48f82d72a6ff4377977157ce320b"
+  integrity sha512-ZhdZ0QjM0McyBaCL/huOjvpuErDPVAWiA8Gohax93mObuK/XrRrmEUUckR2R272BfYQCnc0F2rIrzkWWRAo3PA==
+
 "@servall/router-testing@0.1":
   version "0.1.0"
   resolved "https://npm.servalldatasystems.com/@servall%2frouter-testing/-/router-testing-0.1.0.tgz#10eb5ef6e6db4ffbb6c93c5b8be72eee90b05271"
@@ -175,6 +180,11 @@
     "@types/keygrip" "*"
     "@types/koa-compose" "*"
     "@types/node" "*"
+
+"@types/lodash@4":
+  version "4.14.123"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.123.tgz#39be5d211478c8dd3bdae98ee75bb7efe4abfe4d"
+  integrity sha512-pQvPkc4Nltyx7G1Ww45OjVqUsJP4UsZm+GWJpigXgkikZqJgRm4c48g027o6tdgubWHwFRF15iFd+Y4Pmqv6+Q==
 
 "@types/mime@*":
   version "2.0.0"
@@ -2658,7 +2668,7 @@ lodash.sortby@^4.7.0:
   resolved "https://registry.yarnpkg.com/lodash.sortby/-/lodash.sortby-4.7.0.tgz#edd14c824e2cc9c1e0b0a1b42bb5210516a42438"
   integrity sha1-7dFMgk4sycHgsKG0K7UhBRakJDg=
 
-lodash@^4.13.1, lodash@^4.17.10, lodash@^4.17.4:
+lodash@4, lodash@^4.13.1, lodash@^4.17.10, lodash@^4.17.4:
   version "4.17.11"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.11.tgz#b39ea6229ef607ecd89e2c8df12536891cac9b8d"
   integrity sha512-cQKh8igo5QUhZ7lg38DYWAxMvjSAKG0A8wGSVimP07SIUEK2UO+arSRKbRZWtelMtN5V0Hkwh5ryOto/SshYIg==

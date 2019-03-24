@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
+import { Extraction, extract } from '@servall/mapper';
 export * from './decorators';
 
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
@@ -130,6 +131,7 @@ export interface RouteWithContext<Ctx> {
   method: HttpMethod | HttpMethod[];
   schema?: Schema;
   querySchema?: Schema;
+  returning?: Extraction;
   action: RouteActionWithContext<Ctx>;
   middleware?: Middleware[];
 }
@@ -219,6 +221,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
       method,
       schema,
       querySchema,
+      returning,
       middleware = [],
       routerMiddleware = [],
     } = route;
@@ -275,7 +278,11 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
               console.warn('overwriting ctx.body, which was set in a route handler');
             }
 
-            ctx.body = response || '';
+            if (returning) {
+              ctx.body = extract(response, returning);
+            } else {
+              ctx.body = response || '';
+            }
           } else if (response === undefined && ctx.body === undefined) {
             throw {
               status: 500,

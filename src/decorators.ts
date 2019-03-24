@@ -1,88 +1,67 @@
+import { merge } from 'lodash';
+import { Extraction } from '@servall/mapper';
 import { Middleware } from './index';
 
+type PrivateApiFields = { [key: string]: true | (() => Function) };
+
 const inject = (target: any, base = Object.getPrototypeOf(target)) => {
-  if (!target.__apiFields) {
-    // we inherit from a base class with __apiFields
-    Object.defineProperty(target, '__apiFields', { value: new Set() });
-    Object.defineProperty(target, '__apiExcludeFields', { value: new Set() });
-  }
-
-  if (base.__apiFields) {
-    for (const name of base.__apiFields) {
-      target.__apiFields.add(name);
-    }
-
-    for (const name of base.__apiExcludeFields) {
-      target.__apiFields.delete(name);
-      target.__apiExcludeFields.add(name);
-    }
-  }
+  target.__apiFields = {
+    ...(base.__apiFields || {}),
+    ...(target.__apiFields || {}),
+  };
 
   return target;
 };
 
-export const ApiField = ({ exclude = false } = {}) => function (target: any, name: string) {
-  inject(target);
+export const ApiField = (fieldType?: Extraction | (() => Function | [Function])) =>
+  function (klass: any, name: string) {
+    const target = inject(klass.constructor);
 
-  if (exclude) {
-    target.__apiFields.delete(name);
-    target.__apiExcludeFields.add(name);
-  } else if (!target.__apiExcludeFields.has(name) && !target.__apiFields.has(name)) {
-    target.__apiFields.add(name);
-  }
-};
+    if (!target.__apiFields[name]) {
+      target.__apiFields[name] = fieldType ? fieldType : true;
+    }
 
-type ApiFieldsOptions = {
-  exclude?: string[];
-};
+    target.getApiFields = function () {
+      const extract: any = {};
 
-export const ApiFields = ({ exclude = [] }: ApiFieldsOptions = {}) => function (Class: any): any {
-  // we wrap the original class, but adding __apiFields after the constructor is called
-  class Wrapped extends Class {
-    constructor(...args: any[]) {
-      super(...args);
+      Object.entries(target.__apiFields as PrivateApiFields).forEach(([name, val]) => {
+        if (val === true) {
+          extract[name] = true;
+        } else {
+          // @ApiField({ foo: true })
+          if (typeof val !== 'function') {
+            extract[name] = val;
+            return;
+          }
 
-      inject(this);
+          const nested = val();
 
-      for (const name of Object.keys(this)) {
-        if (exclude.includes(name) || this.__apiExcludeFields.has(name)) {
-          this.__apiFields.delete(name);
-          this.__apiExcludeFields.add(name);
-        } else if (!this.__apiFields.has(name)) {
-          this.__apiFields.add(name);
+          if (Array.isArray(nested) && nested.length === 1) {
+            // @ApiField(() => [Type]) for array mapping is special
+            extract[name] = [getApiFields(nested[0])];
+          } else {
+            // @ApiField(() => Type)
+            extract[name] = getApiFields(nested);
+          }
         }
-      }
+      });
+
+      return extract;
+    };
+  };
+
+export const getApiFields = (klass: any, and?: object): { [key: string]: Extraction } => {
+  let fields = {};
+
+  if (klass) {
+    if (klass.getApiFields) {
+      fields = klass.getApiFields();
+    }
+
+    if (klass.constructor.getApiFields) {
+      fields = klass.constructor.getApiFields();
     }
   }
 
-  return Wrapped;
-};
-
-export const extractApiFields = (target: any): any => {
-  if (!target) {
-    return target;
-  }
-
-  if (Array.isArray(target)) {
-    return target.map(extractApiFields);
-  }
-
-  if (!target.__apiFields) {
-    return target;
-  }
-
-  const result: any = {};
-  for (const field of target.__apiFields) {
-    result[field] = extractApiFields(target[field]);
-  }
-
-  return result;
-};
-
-export const extractApiFieldsMiddleware = (): Middleware => async (ctx, next) => {
-  await next();
-
-  if (ctx.body) {
-    ctx.body = extractApiFields(ctx.body);
-  }
+  return merge(fields, and || {});
 };
