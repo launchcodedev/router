@@ -1,3 +1,8 @@
+# 0.4.0
+
+- adds `returnings` option in route actions
+- changes `@ApiField` decorator to create Extraction fields for `returning`
+
 # 0.3.3 (Skipped 0.3.2)
 
 - adds `querySchema` beside `schema` to validate incoming query strings - same interface and features as body schema validation
@@ -12,7 +17,7 @@
 - order of middleware shifted slightly:
 
   Router level middleware (the `middleware(deps) => Middleware[]`) will occur BEFORE schema validation, instead of after.
-  
+
 # 0.2.2
 
 - adds `JSONSchema.load('schemaName', path.join(__dirname, '../my-schema-dir'))` which loads 'my-schema-dir/schemaName.json'
@@ -27,7 +32,7 @@
 
 Note: This is only a breaking change if you were calling many of the route building functions directly.
       Regular use of router would not be impacted by this.
-      
+
 # 0.1.12
 
 - `return false` in a route action sets `ctx.status = 204` for you.
