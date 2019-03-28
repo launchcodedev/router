@@ -796,3 +796,75 @@ test('extract response', async () => {
       });
   });
 });
+
+test('action path array', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: ['/test', '/test/1', '/1'],
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return { test: true };
+          },
+        },
+      ]);
+    },
+  };
+
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/test')
+      .expect({ test: true }).expect(200);
+    await test.get('/test/1')
+      .expect({ test: true }).expect(200);
+    await test.get('/1')
+      .expect({ test: true }).expect(200);
+    await test.get('/test/2')
+      .expect(404);
+    await test.get('/2')
+      .expect(404);
+  });
+});
+
+test('action path array with prefix', async () => {
+  const factory: RouteFactory<{}> = {
+    prefix: '/prefix',
+
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: ['/test', '/test/1', '/1'],
+          method: [HttpMethod.GET, HttpMethod.POST],
+          async action(ctx, next) {
+            return { test: true };
+          },
+        },
+      ]);
+    },
+  };
+
+  await routerTest(factory, {}, async (test) => {
+    await test.get('/prefix/test')
+      .expect({ test: true }).expect(200);
+    await test.get('/prefix/test/1')
+      .expect({ test: true }).expect(200);
+    await test.get('/prefix/1')
+      .expect({ test: true }).expect(200);
+    await test.get('/prefix/test/2')
+      .expect(404);
+    await test.get('/prefix/2')
+      .expect(404);
+    await test.get('/test')
+      .expect(404);
+    await test.get('/test/1')
+      .expect(404);
+  });
+});
