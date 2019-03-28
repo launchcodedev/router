@@ -45,9 +45,9 @@
     tslib "^1.8.1"
 
 "@servall/mapper@0.1":
-  version "0.1.3"
-  resolved "https://npm.servalldatasystems.com/@servall%2fmapper/-/mapper-0.1.3.tgz#485ec87c286c48f82d72a6ff4377977157ce320b"
-  integrity sha512-ZhdZ0QjM0McyBaCL/huOjvpuErDPVAWiA8Gohax93mObuK/XrRrmEUUckR2R272BfYQCnc0F2rIrzkWWRAo3PA==
+  version "0.1.4"
+  resolved "https://npm.servalldatasystems.com/@servall%2fmapper/-/mapper-0.1.4.tgz#dd8372bd3992de8f52674cfd33741a4a31c195af"
+  integrity sha512-7xkedgA6Clw/DIXAOiiY42ypIIjXIjPdPc6ClwXS0GwcZZG830knsG6CA1g+d6+JRf58CNR1yZjFMGyQ4gRv5A==
 
 "@servall/router-testing@0.1":
   version "0.1.0"
