@@ -127,7 +127,7 @@ export interface RouteFactory<T> {
 }
 
 export interface RouteWithContext<Ctx> {
-  path: string;
+  path: string | string[];
   method: HttpMethod | HttpMethod[];
   schema?: Schema;
   querySchema?: Schema;
@@ -165,7 +165,20 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
     routes.push(...await createAllRoutes(nested));
   }
 
-  return routes.map(route => ({
+  type FlatRoute = Route & { path: string };
+
+  const flatRoutes = routes.reduce((routes, route) => {
+    if (Array.isArray(route.path)) {
+      return routes.concat(route.path.map(path => ({
+        ...route,
+        path,
+      })));
+    }
+
+    return routes.concat(route as FlatRoute);
+  }, [] as FlatRoute[]);
+
+  return flatRoutes.map(route => ({
     ...route,
     // add the prefix of the router to each Route
     path: join(factory.prefix || '', route.path),
