@@ -256,6 +256,10 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
         bindFn(path, async (ctx, next) => {
           const { body } = (ctx.request as any);
 
+          if (body === undefined) {
+            throw new BaseError('a request body is required', 400);
+          }
+
           const result = await schema.validate(body);
 
           if (result !== true) {
