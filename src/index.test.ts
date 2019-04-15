@@ -868,3 +868,34 @@ test('action path array with prefix', async () => {
       .expect(404);
   });
 });
+
+test('empty body', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [
+        propagateErrors(),
+      ];
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test',
+          method: HttpMethod.POST,
+          schema: { validate: async () => true },
+          async action(ctx, next) {
+            return {};
+          },
+        },
+      ]);
+    },
+  };
+
+  await routerTest(factory, await factory.getDependencies(), async (test) => {
+    await test.post('/test').expect(400);
+  });
+});
