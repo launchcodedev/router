@@ -38,6 +38,10 @@ export class BaseError extends Error {
   }
 }
 
+export const err = (status: number, msg: string, code = -1) => {
+  return new BaseError(msg, code, status);
+};
+
 export enum HttpMethod {
   GET = 'get',
   POST = 'post',
