@@ -9,6 +9,7 @@ import {
   Next,
   JSONSchema,
   YupSchema,
+  err,
   bindRouteActions,
   propagateErrors,
 } from './index';
@@ -897,5 +898,37 @@ test('empty body', async () => {
 
   await routerTest(factory, await factory.getDependencies(), async (test) => {
     await test.post('/test').expect(400);
+  });
+});
+
+test('error data', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [
+        propagateErrors(),
+      ];
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test',
+          method: HttpMethod.POST,
+          async action(ctx, next) {
+            throw err(400, 'foo').withData({ bar: true });
+          },
+        },
+      ]);
+    },
+  };
+
+  await routerTest(factory, await factory.getDependencies(), async (test) => {
+    await test.post('/test')
+      .expect(400)
+      .expect({ success: false, code: -1, message: 'foo', data: { bar: true } });
   });
 });
