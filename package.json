@@ -70,6 +70,7 @@
   },
   "dependencies": {
     "@servall/mapper": "0.1",
+    "@servall/ts": "0.1",
     "fs-extra": "5",
     "js-yaml": "3",
     "lodash": "4",

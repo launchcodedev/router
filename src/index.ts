@@ -7,6 +7,7 @@ import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
 import { Extraction, extract } from '@servall/mapper';
+import { Json } from '@servall/ts';
 export * from './decorators';
 
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
@@ -24,6 +25,7 @@ export class BaseError extends Error {
   code: number = 0;
   message: string = 'Something went wrong';
   statusCode: number = 500;
+  data?: Json;
 
   constructor(message: string, code: number = 500, statusCode: number = code) {
     super(message);
@@ -31,6 +33,11 @@ export class BaseError extends Error {
     this.message = message;
     this.code = code;
     this.statusCode = statusCode;
+  }
+
+  withData(data: Json) {
+    this.data = data;
+    return this;
   }
 
   static from(err: Error, code?: number, statusCode?: number) {
@@ -356,6 +363,7 @@ export const propagateErrors = (): Middleware => async (ctx, next) => {
       success: false,
       code: err.code || ctx.status,
       message: filterMessage(ctx.status, err.message),
+      data: err.data || null,
     };
   }
 };
