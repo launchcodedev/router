@@ -1,4 +1,5 @@
 import { routerTest } from '@servall/router-testing';
+import { SchemaBuilder } from '@serafin/schema-builder';
 import * as bodyparser from 'koa-bodyparser';
 import { dir as tempDir } from 'tmp-promise';
 import {
@@ -10,6 +11,7 @@ import {
   JSONSchema,
   YupSchema,
   err,
+  routeWithBody,
   bindRouteActions,
   propagateErrors,
 } from './index';
@@ -930,5 +932,50 @@ test('error data', async () => {
     await test.post('/test')
       .expect(400)
       .expect({ success: false, code: -1, message: 'foo', data: { bar: true } });
+  });
+});
+
+test('typed route', async () => {
+  type Dependencies = { foo: string };
+
+  const factory: RouteFactory<Dependencies> = {
+    getDependencies() {
+      return {
+        foo: 'bar',
+      };
+    },
+
+    middleware() {
+      return [
+        bodyparser(),
+        propagateErrors(),
+      ];
+    },
+
+    create(dependencies) {
+      return bindRouteActions(dependencies, [
+        routeWithBody({
+          path: '/test',
+          method: HttpMethod.POST,
+          schema: SchemaBuilder.emptySchema()
+            .addInteger('input')
+            .addInteger('input2'),
+          async action(ctx, body) {
+            return { ...body, ...this };
+          },
+        }),
+      ]);
+    },
+  };
+
+  await routerTest(factory, await factory.getDependencies(), async (test) => {
+    await test.post('/test')
+      .expect(400);
+
+    await test.post('/test').send({ input: 1, input2: '2' })
+      .expect(400);
+
+    await test.post('/test').send({ input: 1, input2: 2 })
+      .expect(200).expect({ input: 1, input2: 2, foo: 'bar' });
   });
 });

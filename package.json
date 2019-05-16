@@ -36,6 +36,7 @@
     }
   },
   "devDependencies": {
+    "@serafin/schema-builder": "0.8",
     "@servall/router": "link:.",
     "@servall/router-testing": "0.1",
     "@types/fs-extra": "5",
@@ -62,6 +63,7 @@
     "yup": "0.26"
   },
   "peerDependencies": {
+    "@serafin/schema-builder": "0.8",
     "ajv": "6",
     "koa": "2",
     "koa-bodyparser": "4",
