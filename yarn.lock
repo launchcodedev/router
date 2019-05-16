@@ -44,6 +44,14 @@
     reflect-metadata "^0.1.12"
     tslib "^1.8.1"
 
+"@serafin/schema-builder@0.8":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@serafin/schema-builder/-/schema-builder-0.8.0.tgz#878d89beca0c8ecbc9d6aea07a8bf3dfc4d73196"
+  integrity sha512-3sSCqEqj93tRUqaCNUEnDSecg/2eH65FvoWvEwOb/ETvi4Vm18Jg0Mo5PX9BNyE8KkxLcwQdMamyrDCzxiN9jw==
+  dependencies:
+    ajv "^6.10.0"
+    verror "^1.10.0"
+
 "@servall/mapper@0.1":
   version "0.1.4"
   resolved "https://npm.servalldatasystems.com/@servall%2fmapper/-/mapper-0.1.4.tgz#dd8372bd3992de8f52674cfd33741a4a31c195af"
@@ -284,6 +292,16 @@ ajv@6, ajv@^6.5.5:
   version "6.6.2"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.6.2.tgz#caceccf474bf3fc3ce3b147443711a24063cc30d"
   integrity sha512-FBHEW6Jf5TB9MGBgUUA9XHkTbjXYfAUjY43ACMfmdMRHniyoMHjHjzD50OK8LGDWQwp4rWEsIq5kEqq7rvIM1g==
+  dependencies:
+    fast-deep-equal "^2.0.1"
+    fast-json-stable-stringify "^2.0.0"
+    json-schema-traverse "^0.4.1"
+    uri-js "^4.2.2"
+
+ajv@^6.10.0:
+  version "6.10.0"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.10.0.tgz#90d0d54439da587cd7e843bfb7045f50bd22bdf1"
+  integrity sha512-nffhOpkymDECQyR0mnsUtoCE8RlX38G0rYP+wgLWFyZuUyuuojSSvi/+euOiQBIn63whYwYVIIH1TvE3tu4OEg==
   dependencies:
     fast-deep-equal "^2.0.1"
     fast-json-stable-stringify "^2.0.0"
@@ -4269,7 +4287,7 @@ vary@^1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha1-IpnwLG3tMNSllhsLn3RSShj2NPw=
 
-verror@1.10.0:
+verror@1.10.0, verror@^1.10.0:
   version "1.10.0"
   resolved "https://registry.yarnpkg.com/verror/-/verror-1.10.0.tgz#3a105ca17053af55d6e270c1f8288682e18da400"
   integrity sha1-OhBcoXBTr1XW4nDB+CiGguGNpAA=

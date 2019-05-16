@@ -6,8 +6,9 @@ import * as yup from 'yup';
 import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
+import { SchemaBuilder } from '@serafin/schema-builder';
 import { Extraction, extract } from '@servall/mapper';
-import { Json } from '@servall/ts';
+import { Json, Omit } from '@servall/ts';
 export * from './decorators';
 
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
@@ -152,6 +153,25 @@ export type Route = RouteWithContext<any>;
 type MadeRoute = Route & {
   routerMiddleware: Middleware[];
 };
+
+type RouteActionWithContextAndBody<Body, Ctx> =
+  (this: Ctx, ctx: Context, body: Body, next: Next) => RouteActionResponse;
+
+export function routeWithBody<Body, Ctx>(
+  route: Omit<RouteWithContext<Ctx>, 'action' | 'method' | 'schema'> & {
+    method: HttpMethod.POST | HttpMethod.PUT | HttpMethod.PATCH,
+    schema: SchemaBuilder<Body>,
+    action: RouteActionWithContextAndBody<Body, Ctx>,
+  },
+): RouteWithContext<Ctx> {
+  return {
+    ...route,
+    schema: new JSONSchema(route.schema.schema),
+    async action(ctx, next) {
+      return route.action.call(this, ctx, ctx.request.body, next);
+    },
+  };
+}
 
 export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
   return routes.map(route => ({
