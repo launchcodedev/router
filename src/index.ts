@@ -65,6 +65,7 @@ export enum HttpMethod {
 
 export interface Schema {
   validate: (body: any) => Promise<true | Error>;
+  toMarkdownDoc?: () => string;
 }
 
 export class JSONSchema implements Schema {
@@ -104,6 +105,14 @@ export class JSONSchema implements Schema {
 
     return new BaseError(`validation error: [${err}]`, 400);
   }
+
+  toMarkdownDoc() {
+    return [
+      '```json',
+      JSON.stringify(this.raw, null, 2),
+      '```',
+    ].join('\n');
+  }
 }
 
 export class YupSchema<T> implements Schema {
@@ -140,6 +149,8 @@ export interface RouteFactory<T> {
 
 export interface RouteWithContext<Ctx> {
   path: string | string[];
+  name?: string;
+  description?: string;
   method: HttpMethod | HttpMethod[];
   schema?: Schema;
   querySchema?: Schema;
@@ -251,7 +262,6 @@ export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
 
 export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
   const router = new Router();
-  const ajv = new Ajv();
 
   if (debug) {
     console.log('Mounting routes...');
@@ -371,6 +381,57 @@ export const createRouterFactories = async (factories: RouteFactory<any>[], debu
 export const createRouter = async (dir: string, debug = false) => {
   const routes = await createAllRoutes(await findRouters(dir));
   return createRouterRaw(routes, debug);
+};
+
+export const createRouterDocs = (routes: MadeRoute[]) => {
+  return routes.map((route) => {
+    const {
+      name,
+      description,
+      path,
+      method,
+      schema,
+      querySchema,
+      returning,
+    } = route;
+
+    const docs = [];
+
+    if (Array.isArray(method)) {
+      docs.push(
+        `## ${name ? `${name} ` : ''}${method.map(m => m.toUpperCase()).join(', ')} ${path}`,
+      );
+    } else {
+      docs.push(
+        `## ${name ? `${name} ` : ''}${method.toUpperCase()} ${path}`,
+      );
+    }
+
+    if (description) {
+      docs.push(description);
+    }
+
+    docs.push('');
+
+    if (schema && schema.toMarkdownDoc) {
+      docs.push(...[
+        `Accepts:`,
+        schema.toMarkdownDoc(),
+        '',
+      ]);
+    }
+
+    if (returning) {
+      docs.push(...[
+        `Returns:`,
+        '```json',
+        JSON.stringify(returning, null, 2),
+        '```',
+      ]);
+    }
+
+    return docs.join('\n');
+  });
 };
 
 export const propagateErrors = (): Middleware => async (ctx, next) => {

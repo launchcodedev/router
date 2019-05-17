@@ -13,6 +13,8 @@ import {
   err,
   routeWithBody,
   bindRouteActions,
+  createAllRoutes,
+  createRouterDocs,
   propagateErrors,
 } from './index';
 import { writeJson, outputFile, remove } from 'fs-extra';
@@ -960,10 +962,17 @@ test('typed route', async () => {
           schema: SchemaBuilder.emptySchema()
             .addInteger('input')
             .addInteger('input2'),
-          async action(ctx, body) {
+          async action(this: Dependencies, ctx, body) {
             return { ...body, ...this };
           },
         }),
+        {
+          path: 'test2',
+          method: HttpMethod.GET,
+          async action(ctx) {
+            return {};
+          },
+        },
       ]);
     },
   };
@@ -975,7 +984,113 @@ test('typed route', async () => {
     await test.post('/test').send({ input: 1, input2: '2' })
       .expect(400);
 
+    await test.get('/test2')
+      .expect({});
+
     await test.post('/test').send({ input: 1, input2: 2 })
       .expect(200).expect({ input: 1, input2: 2, foo: 'bar' });
   });
 });
+
+test('docs', async () => {
+  type Dependencies = {};
+
+  const factory: RouteFactory<Dependencies> = {
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies) {
+      return bindRouteActions(dependencies, [
+        routeWithBody({
+          path: '/unnamed',
+          method: HttpMethod.POST,
+          schema: SchemaBuilder.emptySchema()
+            .addInteger('input')
+            .addInteger('input2'),
+          returning: {
+            foo: {
+              bar: true,
+            },
+          },
+          async action(this: Dependencies, ctx, body) {
+            return { foo: { bar: body.input } };
+          },
+        }),
+        {
+          path: '/named',
+          name: 'Special',
+          description: 'Does certain things',
+          method: HttpMethod.POST,
+          schema: new JSONSchema({
+            input2: { type: 'string' },
+          }),
+          returning: {
+            foo: [{ bar: true }],
+          },
+          async action(ctx) {
+            return { foo: [{ bar: 22 }] };
+          },
+        },
+      ]);
+    },
+  };
+
+  const docs = createRouterDocs(await createAllRoutes([factory]));
+
+  expect(docs.join('\n\n')).toEqual(
+`## POST /unnamed
+
+Accepts:
+\`\`\`json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "input": {
+      "type": "integer"
+    },
+    "input2": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "input",
+    "input2"
+  ]
+}
+\`\`\`
+
+Returns:
+\`\`\`json
+{
+  "foo": {
+    "bar": true
+  }
+}
+\`\`\`
+
+## Special POST /named
+Does certain things
+
+Accepts:
+\`\`\`json
+{
+  "input2": {
+    "type": "string"
+  }
+}
+\`\`\`
+
+Returns:
+\`\`\`json
+{
+  "foo": [
+    {
+      "bar": true
+    }
+  ]
+}
+\`\`\``);
+});
+
