@@ -1070,6 +1070,7 @@ Returns:
 }
 \`\`\`
 
+
 ## Special POST /named
 Does certain things
 
@@ -1091,5 +1092,6 @@ Returns:
     }
   ]
 }
-\`\`\``);
+\`\`\`
+`);
 });
