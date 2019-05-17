@@ -415,7 +415,7 @@ export const createRouterDocs = (routes: MadeRoute[]) => {
 
     if (schema && schema.toMarkdownDoc) {
       docs.push(...[
-        `Accepts:`,
+        'Accepts:',
         schema.toMarkdownDoc(),
         '',
       ]);
@@ -423,10 +423,11 @@ export const createRouterDocs = (routes: MadeRoute[]) => {
 
     if (returning) {
       docs.push(...[
-        `Returns:`,
+        'Returns:',
         '```json',
         JSON.stringify(returning, null, 2),
         '```',
+        '',
       ]);
     }
 
