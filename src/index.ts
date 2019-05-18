@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
+import * as OpenAPI from '@serafin/open-api';
 import { SchemaBuilder } from '@serafin/schema-builder';
 import { Extraction, extract } from '@servall/mapper';
 import { Json, Omit } from '@servall/ts';
@@ -65,7 +66,6 @@ export enum HttpMethod {
 
 export interface Schema {
   validate: (body: any) => Promise<true | Error>;
-  toMarkdownDoc?: () => string;
 }
 
 export class JSONSchema implements Schema {
@@ -105,14 +105,6 @@ export class JSONSchema implements Schema {
 
     return new BaseError(`validation error: [${err}]`, 400);
   }
-
-  toMarkdownDoc() {
-    return [
-      '```json',
-      JSON.stringify(this.raw, null, 2),
-      '```',
-    ].join('\n');
-  }
 }
 
 export class YupSchema<T> implements Schema {
@@ -149,8 +141,7 @@ export interface RouteFactory<T> {
 
 export interface RouteWithContext<Ctx> {
   path: string | string[];
-  name?: string;
-  description?: string;
+  docs?: Partial<OpenAPI.OperationObject>,
   method: HttpMethod | HttpMethod[];
   schema?: Schema;
   querySchema?: Schema;
@@ -383,11 +374,20 @@ export const createRouter = async (dir: string, debug = false) => {
   return createRouterRaw(routes, debug);
 };
 
-export const createRouterDocs = (routes: MadeRoute[]) => {
-  return routes.map((route) => {
+export const createOpenAPI = (routes: MadeRoute[], meta: { info: OpenAPI.InfoObject }) => {
+  const paths: OpenAPI.PathObject = {};
+
+  const openAPI: OpenAPI.OpenAPIObject = {
+    openapi: '3.0.0',
+    info: meta.info,
+    servers: [],
+    paths,
+  };
+
+  for (const route of routes) {
+    // TODO: extract parameters from paths
     const {
-      name,
-      description,
+      docs,
       path,
       method,
       schema,
@@ -395,44 +395,31 @@ export const createRouterDocs = (routes: MadeRoute[]) => {
       returning,
     } = route;
 
-    const docs = [];
+    const desc: OpenAPI.OperationObject = {
+      responses: {},
+      ...docs,
+    };
 
-    if (Array.isArray(method)) {
-      docs.push(
-        `## ${name ? `${name} ` : ''}${method.map(m => m.toUpperCase()).join(', ')} ${path}`,
-      );
-    } else {
-      docs.push(
-        `## ${name ? `${name} ` : ''}${method.toUpperCase()} ${path}`,
-      );
+    if (schema instanceof JSONSchema) {
+      desc.requestBody = {
+        content: {
+          'application/json': {
+            schema: schema.raw,
+          }
+        }
+      };
     }
 
-    if (description) {
-      docs.push(description);
+    for (const p of Array.isArray(path) ? path : [path]) {
+      paths[p] = paths[p] || {};
+
+      for (const m of Array.isArray(method) ? method : [method]) {
+        paths[p][m] = desc;
+      }
     }
+  }
 
-    docs.push('');
-
-    if (schema && schema.toMarkdownDoc) {
-      docs.push(...[
-        'Accepts:',
-        schema.toMarkdownDoc(),
-        '',
-      ]);
-    }
-
-    if (returning) {
-      docs.push(...[
-        'Returns:',
-        '```json',
-        JSON.stringify(returning, null, 2),
-        '```',
-        '',
-      ]);
-    }
-
-    return docs.join('\n');
-  });
+  return openAPI;
 };
 
 export const propagateErrors = (): Middleware => async (ctx, next) => {

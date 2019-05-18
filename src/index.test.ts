@@ -14,7 +14,7 @@ import {
   routeWithBody,
   bindRouteActions,
   createAllRoutes,
-  createRouterDocs,
+  createOpenAPI,
   propagateErrors,
 } from './index';
 import { writeJson, outputFile, remove } from 'fs-extra';
@@ -1019,11 +1019,16 @@ test('docs', async () => {
         }),
         {
           path: '/named',
-          name: 'Special',
-          description: 'Does certain things',
+          docs: {
+            summary: 'Special',
+            description: 'Does certain things',
+          },
           method: HttpMethod.POST,
           schema: new JSONSchema({
-            input2: { type: 'string' },
+            type: 'object',
+            properties: {
+              input2: { type: 'string' },
+            },
           }),
           returning: {
             foo: [{ bar: true }],
@@ -1036,62 +1041,10 @@ test('docs', async () => {
     },
   };
 
-  const docs = createRouterDocs(await createAllRoutes([factory]));
+  const info = {
+    title: 'test',
+    version: '1.0.0',
+  };
 
-  expect(docs.join('\n\n')).toEqual(
-`## POST /unnamed
-
-Accepts:
-\`\`\`json
-{
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "input": {
-      "type": "integer"
-    },
-    "input2": {
-      "type": "integer"
-    }
-  },
-  "required": [
-    "input",
-    "input2"
-  ]
-}
-\`\`\`
-
-Returns:
-\`\`\`json
-{
-  "foo": {
-    "bar": true
-  }
-}
-\`\`\`
-
-
-## Special POST /named
-Does certain things
-
-Accepts:
-\`\`\`json
-{
-  "input2": {
-    "type": "string"
-  }
-}
-\`\`\`
-
-Returns:
-\`\`\`json
-{
-  "foo": [
-    {
-      "bar": true
-    }
-  ]
-}
-\`\`\`
-`);
+  const docs = createOpenAPI(await createAllRoutes([factory]), { info });
 });
