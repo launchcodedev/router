@@ -9,7 +9,7 @@ import * as resolveFrom from 'resolve-from';
 import * as OpenAPI from '@serafin/open-api';
 import { SchemaBuilder } from '@serafin/schema-builder';
 import { Extraction, extract } from '@servall/mapper';
-import { Json, Omit } from '@servall/ts';
+import { Json, Omit, NonOptional } from '@servall/ts';
 export * from './decorators';
 
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
@@ -141,7 +141,10 @@ export interface RouteFactory<T> {
 
 export interface RouteWithContext<Ctx> {
   path: string | string[];
-  docs?: Partial<OpenAPI.OperationObject>,
+  docs?: OpenAPI.OperationObject & {
+    // we override this to enforce non-invalid responses objects
+    responses: { [statusCode: number]: OpenAPI.ResponseObject },
+  };
   method: HttpMethod | HttpMethod[];
   schema?: Schema;
   querySchema?: Schema;
@@ -174,6 +177,16 @@ export function routeWithBody<Body, Ctx>(
     },
   };
 }
+
+export const nestedRouter = (): RouteFactory<void> => {
+  return {
+    prefix: '/api',
+    nested: () => findRouters(__dirname),
+
+    getDependencies() { return; },
+    create(dependencies) { return []; },
+  };
+};
 
 export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
   return routes.map(route => ({
@@ -378,10 +391,10 @@ export const createOpenAPI = (routes: MadeRoute[], meta: { info: OpenAPI.InfoObj
   const paths: OpenAPI.PathObject = {};
 
   const openAPI: OpenAPI.OpenAPIObject = {
+    paths,
     openapi: '3.0.0',
     info: meta.info,
     servers: [],
-    paths,
   };
 
   for (const route of routes) {
@@ -395,18 +408,17 @@ export const createOpenAPI = (routes: MadeRoute[], meta: { info: OpenAPI.InfoObj
       returning,
     } = route;
 
-    const desc: OpenAPI.OperationObject = {
-      responses: {},
-      ...docs,
-    };
+    const desc: OpenAPI.OperationObject = docs
+      ? { ...docs }
+      : { responses: { default: { description: 'Responses are unknown' } } };
 
     if (schema instanceof JSONSchema) {
       desc.requestBody = {
         content: {
           'application/json': {
             schema: schema.raw,
-          }
-        }
+          },
+        },
       };
     }
 

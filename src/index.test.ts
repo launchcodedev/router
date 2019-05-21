@@ -1022,6 +1022,11 @@ test('docs', async () => {
           docs: {
             summary: 'Special',
             description: 'Does certain things',
+            responses: {
+              200: {
+                description: 'Success',
+              },
+            },
           },
           method: HttpMethod.POST,
           schema: new JSONSchema({
@@ -1047,4 +1052,58 @@ test('docs', async () => {
   };
 
   const docs = createOpenAPI(await createAllRoutes([factory]), { info });
+
+  expect(docs).toEqual({
+    openapi: '3.0.0',
+    info: {
+      title: 'test',
+      version: '1.0.0',
+    },
+    servers: [],
+    paths: {
+      '/unnamed': {
+        post: {
+          responses: {
+            default: { description: 'Responses are unknown' },
+          },
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    input: { type: 'integer' },
+                    input2: { type: 'integer' },
+                  },
+                  required: ['input', 'input2'],
+                },
+              },
+            },
+          },
+        },
+      },
+      '/named': {
+        post: {
+          summary: 'Special',
+          description: 'Does certain things',
+          responses: {
+            200: { description: 'Success' },
+          },
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    input2: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
 });
