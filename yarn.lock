@@ -44,6 +44,11 @@
     reflect-metadata "^0.1.12"
     tslib "^1.8.1"
 
+"@serafin/open-api@3":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@serafin/open-api/-/open-api-3.0.1.tgz#2cea4a6ccff5cdaa07b487c7f53d32fce486e441"
+  integrity sha512-KYOaN1kuuuDAfhEKYy1ok0L9qt5MPBbjx68DQnOrDMQn2F4DsMUeHlqiyzdvjlbh0l8Q3Nra/FXuUH6SoFwrEg==
+
 "@serafin/schema-builder@0.8":
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/@serafin/schema-builder/-/schema-builder-0.8.0.tgz#878d89beca0c8ecbc9d6aea07a8bf3dfc4d73196"

@@ -71,6 +71,7 @@
     "yup": "0.26"
   },
   "dependencies": {
+    "@serafin/open-api": "3",
     "@servall/mapper": "0.1",
     "@servall/ts": "0.1",
     "fs-extra": "5",
