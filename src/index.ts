@@ -388,14 +388,17 @@ export const createRouter = async (dir: string, debug = false) => {
   return createRouterRaw(routes, debug);
 };
 
-export const createOpenAPI = (routes: MadeRoute[], meta: { info: OpenAPI.InfoObject }) => {
+export const createOpenAPI = (
+  routes: MadeRoute[],
+  meta: { info: OpenAPI.InfoObject, servers?: OpenAPI.ServerObject[] },
+) => {
   const paths: OpenAPI.PathObject = {};
 
   const openAPI: OpenAPI.OpenAPIObject = {
     paths,
     openapi: '3.0.0',
     info: meta.info,
-    servers: [],
+    servers: meta.servers || [],
   };
 
   for (const route of routes) {
