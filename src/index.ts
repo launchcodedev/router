@@ -232,6 +232,7 @@ export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
   (await fs.readdir(dir))
     .filter(n => n.match(/\.(j|t)sx?$/))
     .filter(n => !n.match(/\.d\.ts$/))
+    .filter(n => !n.match(/\.test\..*$/))
     .filter(n => !n.match(/^index\./))
     .map((filename) => {
       const { default: factory }: {
