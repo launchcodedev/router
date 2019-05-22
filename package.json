@@ -1,6 +1,6 @@
 {
   "name": "@servall/router",
-  "version": "0.6.3-dev",
+  "version": "0.6.3",
   "description": "Common koa routing for Servall",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
