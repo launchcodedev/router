@@ -196,7 +196,7 @@ export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) =
 };
 
 export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
-  const routes: Route[] = await factory.create(deps);
+  const routes: (Route | MadeRoute)[] = await factory.create(deps);
 
   let routerMiddleware: Middleware[] | undefined;
 
@@ -211,7 +211,7 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
     routes.push(...await createAllRoutes(nested));
   }
 
-  type FlatRoute = Route & { path: string };
+  type FlatRoute = (Route | MadeRoute) & { path: string };
 
   const flatRoutes = routes.reduce((routes, route) => {
     if (Array.isArray(route.path)) {
@@ -229,7 +229,10 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
     // add the prefix of the router to each Route
     path: join(factory.prefix || '', route.path),
     middleware: route.middleware || [],
-    routerMiddleware: routerMiddleware || [],
+    routerMiddleware: [
+      ...(routerMiddleware || []),
+      ...((route as MadeRoute).routerMiddleware || []),
+    ],
   }));
 };
 
