@@ -1107,3 +1107,59 @@ test('docs', async () => {
     },
   });
 });
+
+test('double middleware', async () => {
+  const factory: RouteFactory<{}> = {
+    prefix: '/inner',
+
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [
+        async (ctx, next) => {
+          ctx.state.foo.bat = 'foo';
+          await next();
+        },
+      ];
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test',
+          method: HttpMethod.GET,
+          async action(ctx, next) {
+            return ctx.state.foo;
+          },
+        },
+      ]);
+    },
+  };
+
+  const nester: RouteFactory<{}> = {
+    prefix: '/nest',
+    nested: () => [factory],
+
+    getDependencies() {
+      return {};
+    },
+
+    middleware() {
+      return [
+        async (ctx, next) => {
+          ctx.state.foo = { bar: 'baz' };
+          await next();
+        },
+      ];
+    },
+
+    create() { return []; },
+  };
+
+  await routerTest(nester, {}, async (test) => {
+    await test.get('/nest/inner/test')
+      .expect({ bar: 'baz', bat: 'foo' });
+  });
+});
