@@ -178,10 +178,10 @@ export function routeWithBody<Body, Ctx>(
   };
 }
 
-export const nestedRouter = (): RouteFactory<void> => {
+export const nestedRouter = (dirname: string, prefix?: string): RouteFactory<void> => {
   return {
-    prefix: '/api',
-    nested: () => findRouters(__dirname),
+    prefix,
+    nested: () => findRouters(dirname),
 
     getDependencies() { return; },
     create(dependencies) { return []; },
