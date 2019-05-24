@@ -12,6 +12,9 @@ import { Extraction, extract } from '@servall/mapper';
 import { Json, Omit, NonOptional } from '@servall/ts';
 export * from './decorators';
 
+export { SchemaBuilder } from '@serafin/schema-builder';
+export const emptySchema = SchemaBuilder.emptySchema;
+
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
 type ReturnType<T> = T extends (...args: any) => infer R ? R : never;
 type ReplaceReturnType<T, R extends ReturnType<T>> = (...a: ArgumentTypes<T>) => R;
