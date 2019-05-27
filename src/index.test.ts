@@ -625,7 +625,7 @@ test('json schema validation', async () => {
         {
           path: '/test',
           method: HttpMethod.POST,
-          schema: new JSONSchema({
+          schema: JSONSchema.raw({
             type: 'object',
             required: ['a', 'b'],
           }),
@@ -715,7 +715,7 @@ test('query schema validation', async () => {
         {
           path: '/test',
           method: HttpMethod.POST,
-          querySchema: new JSONSchema({
+          querySchema: JSONSchema.raw({
             additionalProperties: false,
             required: ['x'],
             properties: {
@@ -962,7 +962,7 @@ test('typed route', async () => {
           schema: SchemaBuilder.emptySchema()
             .addInteger('input')
             .addInteger('input2'),
-          async action(this: Dependencies, ctx, body) {
+          async action(ctx, body) {
             return { ...body, ...this };
           },
         }),
@@ -973,6 +973,35 @@ test('typed route', async () => {
             return {};
           },
         },
+        routeWithBody({
+          path: '/test3',
+          method: HttpMethod.PUT,
+          schema: JSONSchema.build(b => b.emptySchema()
+            .addInteger('input'),
+          ),
+          async action(ctx, body) {
+            return {
+              input: body.input,
+            };
+          },
+        }),
+        routeWithBody({
+          path: '/test4',
+          method: HttpMethod.PUT,
+          schema: JSONSchema.raw({
+            type: 'object',
+            additionalProperties: false,
+            required: ['input'],
+            properties: {
+              input: { type: 'string' },
+            },
+          } as const),
+          async action(ctx, body) {
+            return {
+              input: body.input,
+            };
+          },
+        }),
       ]);
     },
   };
@@ -983,6 +1012,21 @@ test('typed route', async () => {
 
     await test.post('/test').send({ input: 1, input2: '2' })
       .expect(400);
+
+    await test.put('/test3').send({})
+      .expect(400);
+
+    await test.put('/test3').send({ input: 1 })
+      .expect({ input: 1 });
+
+    await test.put('/test4').send({})
+      .expect(400);
+
+    await test.put('/test4').send({ input: 1 })
+      .expect(400);
+
+    await test.put('/test4').send({ input: 'in' })
+      .expect({ input: 'in' });
 
     await test.get('/test2')
       .expect({});
@@ -1013,7 +1057,7 @@ test('docs', async () => {
               bar: true,
             },
           },
-          async action(this: Dependencies, ctx, body) {
+          async action(ctx, body) {
             return { foo: { bar: body.input } };
           },
         }),
@@ -1029,7 +1073,7 @@ test('docs', async () => {
             },
           },
           method: HttpMethod.POST,
-          schema: new JSONSchema({
+          schema: JSONSchema.raw({
             type: 'object',
             properties: {
               input2: { type: 'string' },

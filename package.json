@@ -1,6 +1,6 @@
 {
   "name": "@servall/router",
-  "version": "0.6.5-dev",
+  "version": "0.7.0-dev",
   "description": "Common koa routing for Servall",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,26 +21,12 @@
     "fix": "yarn lint --fix",
     "test": "jest"
   },
-  "jest": {
-    "preset": "ts-jest",
-    "testMatch": null,
-    "testRegex": "(tests/.*|src/.*\\.test)\\.(ts|js)$",
-    "testPathIgnorePatterns": [
-      ".yarn-cache"
-    ],
-    "modulePathIgnorePatterns": [
-      ".yarn-cache"
-    ],
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
-    }
-  },
   "devDependencies": {
     "@serafin/schema-builder": "0.8",
     "@servall/router": "link:.",
     "@servall/router-testing": "0.1",
     "@types/fs-extra": "5",
-    "@types/jest": "23",
+    "@types/jest": "24",
     "@types/js-yaml": "3",
     "@types/koa": "2",
     "@types/koa-bodyparser": "4",
@@ -50,13 +36,13 @@
     "@types/supertest": "2",
     "@types/yup": "0.26",
     "ajv": "6",
-    "jest": "23",
+    "jest": "24",
     "koa": "2",
     "koa-bodyparser": "4",
     "koa-router": "7",
     "supertest": "3",
     "tmp-promise": "1",
-    "ts-jest": "23",
+    "ts-jest": "24",
     "tslint": "5",
     "tslint-config-airbnb": "5",
     "typescript": "3",
@@ -78,5 +64,19 @@
     "js-yaml": "3",
     "lodash": "4",
     "resolve-from": "4"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testMatch": null,
+    "testRegex": "(tests/.*|src/.*\\.test)\\.(ts|js)$",
+    "testPathIgnorePatterns": [
+      ".yarn-cache"
+    ],
+    "modulePathIgnorePatterns": [
+      ".yarn-cache"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
   }
 }
