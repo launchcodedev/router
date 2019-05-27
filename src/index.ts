@@ -7,7 +7,7 @@ import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
 import * as OpenAPI from '@serafin/open-api';
-import { SchemaBuilder } from '@serafin/schema-builder';
+import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
 import { Extraction, extract } from '@servall/mapper';
 import { Json, Omit, NonOptional } from '@servall/ts';
 export * from './decorators';
@@ -68,27 +68,38 @@ export interface Schema {
   validate: (body: any) => Promise<true | Error>;
 }
 
-export class JSONSchema implements Schema {
+export class JSONSchema<T> implements Schema {
   readonly ajvValidate: Ajv.ValidateFunction;
+  readonly raw: object;
 
-  constructor(readonly raw: object) {
+  constructor(private readonly builder: SchemaBuilder<T>) {
+    this.raw = builder.schema;
+
     this.ajvValidate = new Ajv().compile({
       // default to draft 7, but of course the schema can just overwrite this
       $schema: 'http://json-schema.org/draft-07/schema#',
-      ...raw,
+      ...this.raw,
     });
+  }
+
+  static build<T>(cb: (builder: typeof SchemaBuilder) => SchemaBuilder<T>) {
+    return new JSONSchema(cb(SchemaBuilder));
+  }
+
+  static raw<S>(schema: S): JSONSchema<JsonSchemaType<S>> {
+    return new JSONSchema(SchemaBuilder.fromJsonSchema(schema));
   }
 
   static load(schemaName: string, schemaDir: string) {
     const path = resolveFrom(schemaDir, `./${schemaName}.json`);
 
-    return new JSONSchema(require(path));
+    return JSONSchema.raw(require(path));
   }
 
   static loadYaml(schemaName: string, schemaDir: string, ext = 'yml') {
     const path = resolveFrom(schemaDir, `./${schemaName}.${ext}`);
     const contents = fs.readFileSync(path);
-    return new JSONSchema(YAML.safeLoad(contents.toString('utf8')));
+    return JSONSchema.raw(YAML.safeLoad(contents.toString('utf8')));
   }
 
   validate = async (body: any) => {
@@ -165,13 +176,15 @@ type RouteActionWithContextAndBody<Body, Ctx> =
 export function routeWithBody<Body, Ctx>(
   route: Omit<RouteWithContext<Ctx>, 'action' | 'method' | 'schema'> & {
     method: HttpMethod.POST | HttpMethod.PUT | HttpMethod.PATCH,
-    schema: SchemaBuilder<Body>,
+    schema: SchemaBuilder<Body> | JSONSchema<Body>,
     action: RouteActionWithContextAndBody<Body, Ctx>,
   },
 ): RouteWithContext<Ctx> {
   return {
     ...route,
-    schema: new JSONSchema(route.schema.schema),
+    schema: route.schema instanceof JSONSchema
+      ? route.schema
+      : new JSONSchema(route.schema),
     async action(ctx, next) {
       return route.action.call(this, ctx, ctx.request.body, next);
     },
@@ -191,7 +204,7 @@ export const nestedRouter = (dirname: string, prefix?: string): RouteFactory<voi
 export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
   return routes.map(route => ({
     ...route,
-    action: route.action.bind(c),
+    action: route.action.bind(c as any),
   }));
 };
 
