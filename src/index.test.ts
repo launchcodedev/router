@@ -962,7 +962,7 @@ test('typed route', async () => {
           schema: SchemaBuilder.emptySchema()
             .addInteger('input')
             .addInteger('input2'),
-          async action(this: Dependencies, ctx, body) {
+          async action(ctx, body) {
             return { ...body, ...this };
           },
         }),
@@ -979,7 +979,7 @@ test('typed route', async () => {
           schema: JSONSchema.build(b => b.emptySchema()
             .addInteger('input'),
           ),
-          async action(this: Dependencies, ctx, body) {
+          async action(ctx, body) {
             return {
               input: body.input,
             };
@@ -996,7 +996,7 @@ test('typed route', async () => {
               input: { type: 'string' },
             },
           } as const),
-          async action(this: Dependencies, ctx, body) {
+          async action(ctx, body) {
             return {
               input: body.input,
             };
@@ -1057,7 +1057,7 @@ test('docs', async () => {
               bar: true,
             },
           },
-          async action(this: Dependencies, ctx, body) {
+          async action(ctx, body) {
             return { foo: { bar: body.input } };
           },
         }),

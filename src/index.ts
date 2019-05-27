@@ -201,7 +201,7 @@ export const nestedRouter = (dirname: string, prefix?: string): RouteFactory<voi
   };
 };
 
-export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]) => {
+export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]): Route[] => {
   return routes.map(route => ({
     ...route,
     action: route.action.bind(c as any),
