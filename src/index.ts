@@ -173,23 +173,39 @@ type MadeRoute = Route & {
   routerMiddleware: Middleware[];
 };
 
-type RouteActionWithContextAndBody<Body, Ctx> =
-  (this: Ctx, ctx: Context, body: Body, next: Next) => RouteActionResponse;
+export const routeWithBody = route;
 
-export function routeWithBody<Body, Ctx>(
-  route: Omit<RouteWithContext<Ctx>, 'action' | 'method' | 'schema'> & {
-    method: HttpMethod.POST | HttpMethod.PUT | HttpMethod.PATCH,
-    schema: SchemaBuilder<Body> | JSONSchema<Body>,
-    action: RouteActionWithContextAndBody<Body, Ctx>,
+export function route<Ctx, Body = never, Query = never>(
+  route: Omit<RouteWithContext<Ctx>, 'action' | 'schema' | 'querySchema'> & {
+    schema?: SchemaBuilder<Body> | JSONSchema<Body>,
+    querySchema?: SchemaBuilder<Query> | JSONSchema<Query>,
+    action: (
+      this: Ctx,
+      ctx: Context,
+      body: Body,
+      query: Query,
+      next: Next,
+    ) => RouteActionResponse,
   },
 ): RouteWithContext<Ctx> {
+  const schema = route.schema
+    ? route.schema instanceof JSONSchema
+      ? route.schema
+      : new JSONSchema(route.schema)
+    : undefined;
+
+  const querySchema = route.querySchema
+    ? route.querySchema instanceof JSONSchema
+      ? route.querySchema
+      : new JSONSchema(route.querySchema)
+    : undefined;
+
   return {
     ...route,
-    schema: route.schema instanceof JSONSchema
-      ? route.schema
-      : new JSONSchema(route.schema),
+    schema,
+    querySchema,
     async action(ctx, next) {
-      return route.action.call(this, ctx, ctx.request.body, next);
+      return route.action.call(this, ctx, ctx.request.body, ctx.query, next);
     },
   };
 }
