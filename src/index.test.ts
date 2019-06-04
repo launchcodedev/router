@@ -633,6 +633,23 @@ test('json schema validation', async () => {
             return true;
           },
         },
+        {
+          path: '/additional',
+          method: HttpMethod.POST,
+          schema: JSONSchema.raw({
+            type: 'object',
+            required: ['a'],
+            properties: {
+              a: {
+                type: 'boolean',
+              },
+            },
+            additionalProperties: false,
+          }),
+          async action(ctx, next) {
+            return true;
+          },
+        },
       ]);
     },
   };
@@ -646,6 +663,14 @@ test('json schema validation', async () => {
 
     await test.post('/test')
       .expect(400);
+
+    await test.post('/additional').send({ a: true, foo: 'bat' })
+      .expect({
+        success: false,
+        code: 400,
+        message: 'validation error: [should NOT have additional properties: foo]',
+        data: null,
+      });
   });
 });
 

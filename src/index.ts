@@ -114,7 +114,13 @@ export class JSONSchema<T> implements Schema {
 
     const err = this.ajvValidate.errors &&
       this.ajvValidate.errors
-      .map(({ dataPath, message }) => `${dataPath}: ${message}`)
+      .map(({ keyword, dataPath, message, params }) => {
+        if (keyword === 'additionalProperties') {
+          return `${message}: ${(params as any).additionalProperty}`;
+        }
+
+        return `${dataPath}: ${message}`;
+      })
       .join(', ');
 
     return new BaseError(`validation error: [${err}]`, 400);
