@@ -9,7 +9,7 @@ import * as resolveFrom from 'resolve-from';
 import * as OpenAPI from '@serafin/open-api';
 import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
 import { Extraction, extract } from '@servall/mapper';
-import { Json, Omit, NonOptional } from '@servall/ts';
+import { Json, NonOptional } from '@servall/ts';
 export * from './decorators';
 
 export { SchemaBuilder } from '@serafin/schema-builder';
