@@ -1,6 +1,6 @@
+/* eslint-disable no-underscore-dangle */
 import { merge } from 'lodash';
 import { Extraction } from '@servall/mapper';
-import { Middleware } from './index';
 
 type PrivateApiFields = { [key: string]: true | (() => Function) };
 
@@ -14,14 +14,14 @@ const inject = (target: any, base = Object.getPrototypeOf(target)) => {
 };
 
 export const ApiField = (fieldType?: Extraction | (() => Function | [Function])) =>
-  function (klass: any, name: string) {
+  function(klass: any, name: string) {
     const target = inject(klass.constructor);
 
     if (!target.__apiFields[name]) {
-      target.__apiFields[name] = fieldType ? fieldType : true;
+      target.__apiFields[name] = fieldType || true;
     }
 
-    target.getApiFields = function () {
+    target.getApiFields = function() {
       const extract: any = {};
 
       Object.entries(target.__apiFields as PrivateApiFields).forEach(([name, val]) => {

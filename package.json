@@ -17,12 +17,15 @@
     "build": "yarn clean && tsc",
     "clean": "rm -rf dist",
     "prepublishOnly": "yarn build",
-    "lint": "tslint src/**/*.ts",
-    "fix": "yarn lint --fix",
-    "test": "jest"
+    "lint": "dev lint",
+    "fix": "dev lint --fix",
+    "test": "jest",
+    "cz": "git-cz"
   },
   "devDependencies": {
+    "@commitlint/cli": "8",
     "@serafin/schema-builder": "0.9",
+    "@servall/commitlint": "1.0.0-rc.1",
     "@servall/router": "link:./.",
     "@servall/router-testing": "0.2",
     "@types/fs-extra": "8",
@@ -35,14 +38,16 @@
     "@types/resolve-from": "5",
     "@types/yup": "0.26",
     "ajv": "6",
+    "commitizen": "3",
+    "cz-conventional-changelog": "2",
+    "husky": "2",
     "jest": "24",
     "koa": "2",
     "koa-bodyparser": "4",
     "koa-router": "7",
+    "lint-staged": "9",
     "tmp-promise": "1",
     "ts-jest": "24",
-    "tslint": "5",
-    "tslint-config-airbnb": "5",
     "typescript": "3",
     "yup": "0.26"
   },
@@ -56,6 +61,7 @@
   },
   "dependencies": {
     "@serafin/open-api": "3",
+    "@servall/dev": "0.0.10-beta.4",
     "@servall/mapper": "0.1",
     "@servall/ts": "0.2",
     "fs-extra": "8",
@@ -75,6 +81,25 @@
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
+    }
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "**/*.ts": "yarn lint"
+  },
+  "commitlint": {
+    "extends": [
+      "@servall/commitlint"
+    ]
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
     }
   }
 }
