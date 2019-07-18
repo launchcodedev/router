@@ -23,8 +23,6 @@ type ReturnType<T> = T extends (...args: any) => infer R ? R : never;
 type ReplaceReturnType<T, R extends ReturnType<T>> = (...a: ArgumentTypes<T>) => R;
 type AddContext<T, TContext> = (this: TContext, ...a: ArgumentTypes<T>) => ReturnType<T>;
 
-const environmentProtectedLogs: (string | undefined)[] = ['staging', 'production'];
-
 export type Middleware = Router.IMiddleware;
 export type Context = Router.IRouterContext;
 export type Next = ArgumentTypes<Middleware>[1];
@@ -488,7 +486,27 @@ export const createOpenAPI = (
   return openAPI;
 };
 
-export const propagateErrors = (): Middleware => async (ctx, next) => {
+const filterInternalMessages = (
+  status: number,
+  errorMessage: string,
+  includeInternalErrors: boolean,
+) => {
+  if (status >= 500 && !includeInternalErrors) {
+    return 'Internal server error (see logs)';
+  }
+
+  return errorMessage;
+};
+
+/**
+ * Wraps all failures that are thrown exceptions in a known JSON format
+ *
+ * Looks like: { success: false, code: number, message: string, data: any | null }
+ */
+export const propagateErrors = (includeInternalErrors: boolean): Middleware => async (
+  ctx,
+  next,
+) => {
   try {
     await next();
   } catch (err) {
@@ -497,16 +515,45 @@ export const propagateErrors = (): Middleware => async (ctx, next) => {
     ctx.body = {
       success: false,
       code: err.code || ctx.status,
-      message: filterMessage(ctx.status, err.message),
+      message: filterInternalMessages(ctx.status, err.message, includeInternalErrors),
       data: err.data || null,
     };
   }
 };
 
-const filterMessage = (status: number, errorMessage: string) => {
-  if (status >= 500 && environmentProtectedLogs.includes(process.env.NODE_ENV)) {
-    return 'Internal server error (see logs)';
-  }
+/**
+ * Wraps all JSON responses in consistent structure, which maps with propagateErrors well
+ *
+ * Looks like: { success: true, data: any, meta: any }
+ *
+ * See addMeta for specifying meta info - or do so yourself in ctx.state.meta
+ */
+export const propagateValues = (): Middleware => async (ctx, next) => {
+  await next();
 
-  return errorMessage;
+  const { body } = ctx;
+
+  if (body && typeof body === 'object') {
+    // checks for Buffers and roughly, streams. not exactly comprehensive but nothing really can be.
+    if (Buffer.isBuffer(body)) return;
+    if (typeof body.read === 'function') return;
+    if ('success' in body) return;
+
+    // set properties in meta to be carried into the body
+    const { meta } = ctx.state;
+
+    ctx.body = {
+      success: true,
+      data: body,
+      meta,
+    };
+  }
+};
+
+/**
+ * Adds meta info when using propagateValues middleware
+ */
+export const addMeta = (ctx: Context, properties: { [key: string]: any }) => {
+  if (!ctx.state.meta) ctx.state.meta = {};
+  Object.assign(ctx.state.meta, properties);
 };

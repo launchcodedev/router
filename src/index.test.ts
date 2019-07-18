@@ -16,6 +16,8 @@ import {
   createAllRoutes,
   createOpenAPI,
   propagateErrors,
+  propagateValues,
+  addMeta,
 } from './index';
 
 test('bindRouteActions', () => {
@@ -585,7 +587,7 @@ test('json schema validation', async () => {
     },
 
     middleware() {
-      return [bodyparser(), propagateErrors()];
+      return [bodyparser(), propagateErrors(true)];
     },
 
     create(dependencies: {}) {
@@ -654,7 +656,7 @@ test('yup schema validation', async () => {
     },
 
     middleware() {
-      return [bodyparser(), propagateErrors()];
+      return [bodyparser(), propagateErrors(true)];
     },
 
     create(dependencies: {}) {
@@ -710,7 +712,7 @@ test('query schema validation', async () => {
     },
 
     middleware() {
-      return [bodyparser(), propagateErrors()];
+      return [bodyparser(), propagateErrors(true)];
     },
 
     create() {
@@ -754,7 +756,7 @@ test('extract response', async () => {
     },
 
     middleware() {
-      return [bodyparser(), propagateErrors()];
+      return [bodyparser(), propagateErrors(true)];
     },
 
     create() {
@@ -885,7 +887,7 @@ test('empty body', async () => {
     },
 
     middleware() {
-      return [propagateErrors()];
+      return [propagateErrors(true)];
     },
 
     create(dependencies: {}) {
@@ -914,7 +916,7 @@ test('error data', async () => {
     },
 
     middleware() {
-      return [propagateErrors()];
+      return [propagateErrors(true)];
     },
 
     create(dependencies: {}) {
@@ -949,7 +951,7 @@ test('typed route', async () => {
     },
 
     middleware() {
-      return [bodyparser(), propagateErrors()];
+      return [bodyparser(), propagateErrors(true)];
     },
 
     create(dependencies) {
@@ -1215,5 +1217,88 @@ test('double middleware', async () => {
 
   await routerTest(nester, {}, async test => {
     await test.get('/nest/inner/test').expect({ bar: 'baz', bat: 'foo' });
+  });
+});
+
+test('propagate values', async () => {
+  const factory: RouteFactory<void> = {
+    getDependencies() {},
+
+    middleware() {
+      return [propagateErrors(true), propagateValues()];
+    },
+
+    create() {
+      return [
+        {
+          path: '/test-a',
+          method: HttpMethod.GET,
+          async action() {
+            return {
+              foo: 'bar',
+            };
+          },
+        },
+        {
+          path: '/test-b',
+          method: HttpMethod.GET,
+          async action() {
+            return 'raw string';
+          },
+        },
+        {
+          path: '/test-c',
+          method: HttpMethod.GET,
+          async action() {
+            return Buffer.from('foobar');
+          },
+        },
+        {
+          path: '/test-d',
+          method: HttpMethod.GET,
+          async action() {
+            throw err(419, 'my error').withData({ foobar: true });
+          },
+        },
+        {
+          path: '/test-e',
+          method: HttpMethod.GET,
+          async action(ctx) {
+            addMeta(ctx, { page: 1, pages: 100 });
+
+            return [{ bar: 'foo' }];
+          },
+        },
+      ];
+    },
+  };
+
+  await routerTest(factory, undefined, async test => {
+    await test.get('/test-a').expect({
+      success: true,
+      data: {
+        foo: 'bar',
+      },
+    });
+
+    await test.get('/test-b').expect('raw string');
+    await test.get('/test-c').expect(Buffer.from('foobar'));
+    await test
+      .get('/test-d')
+      .expect(419)
+      .expect({
+        success: false,
+        code: -1,
+        message: 'my error',
+        data: { foobar: true },
+      });
+    await test.get('/test-e').expect({
+      success: true,
+      data: [{ bar: 'foo' }],
+      meta: {
+        page: 1,
+        pages: 100,
+      },
+    });
   });
 });
