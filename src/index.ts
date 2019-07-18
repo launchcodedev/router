@@ -69,7 +69,7 @@ export enum HttpMethod {
   HEAD = 'head',
   OPTIONS = 'options',
 
-  // / special value that binds to all http methods
+  // special value that binds to all http methods
   all = 'all',
 }
 
