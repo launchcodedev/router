@@ -2,12 +2,12 @@ import { routerTest } from '@servall/router-testing';
 import { SchemaBuilder } from '@serafin/schema-builder';
 import * as bodyparser from 'koa-bodyparser';
 import { dir as tempDir } from 'tmp-promise';
+import { writeJson, outputFile, remove } from 'fs-extra';
+import { join } from 'path';
 import {
   RouteFactory,
   RouteActionWithContext,
   HttpMethod,
-  Context,
-  Next,
   JSONSchema,
   YupSchema,
   err,
@@ -17,8 +17,6 @@ import {
   createOpenAPI,
   propagateErrors,
 } from './index';
-import { writeJson, outputFile, remove } from 'fs-extra';
-import { join, resolve } from 'path';
 
 test('bindRouteActions', () => {
   expect.assertions(1);
@@ -41,7 +39,7 @@ test('router factory pattern', async () => {
     foo: string;
   }
 
-  const test2: RouteActionWithContext<Dependencies> = async function (ctx, next) {
+  const test2: RouteActionWithContext<Dependencies> = async function() {
     return {
       foobar: this.foo,
     };
@@ -61,7 +59,7 @@ test('router factory pattern', async () => {
         {
           path: '/test1',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return {
               foobar: this.foo,
             };
@@ -76,12 +74,10 @@ test('router factory pattern', async () => {
     },
   };
 
-  await routerTest(factory, await factory.getDependencies(), async (test) => {
-    await test.get('/prefixed/test1')
-      .expect({ foobar: 'baz' });
+  await routerTest(factory, await factory.getDependencies(), async test => {
+    await test.get('/prefixed/test1').expect({ foobar: 'baz' });
 
-    await test.get('/prefixed/test2')
-      .expect({ foobar: 'baz' });
+    await test.get('/prefixed/test2').expect({ foobar: 'baz' });
   });
 });
 
@@ -104,7 +100,7 @@ test('router class pattern', async () => {
         {
           path: '/test1',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return {
               foobar: this.foo,
             };
@@ -118,19 +114,17 @@ test('router class pattern', async () => {
       ]);
     }
 
-    static async test2(this: Test & Dependencies, ctx: Context, next: Next) {
+    static async test2(this: Test & Dependencies) {
       return {
         foobar: this.foo,
       };
     }
   }
 
-  await routerTest(new Test(), { foo: 'baz' }, async (test) => {
-    await test.get('/prefixed/test1')
-      .expect({ foobar: 'baz' });
+  await routerTest(new Test(), { foo: 'baz' }, async test => {
+    await test.get('/prefixed/test1').expect({ foobar: 'baz' });
 
-    await test.get('/prefixed/test2')
-      .expect({ foobar: 'baz' });
+    await test.get('/prefixed/test2').expect({ foobar: 'baz' });
   });
 });
 
@@ -143,7 +137,7 @@ test('readme factory example', async () => {
     db: DbConnection;
   }
 
-  const dbStatus: RouteActionWithContext<Dependencies> = async function (ctx, next) {
+  const dbStatus: RouteActionWithContext<Dependencies> = async function() {
     return {
       connected: this.db.isConnected,
     };
@@ -163,7 +157,7 @@ test('readme factory example', async () => {
         {
           path: '/disconnect',
           method: HttpMethod.POST,
-          async action(ctx, next) {
+          async action() {
             this.db.isConnected = false;
 
             return false;
@@ -178,15 +172,12 @@ test('readme factory example', async () => {
     },
   };
 
-  await routerTest(factory, await factory.getDependencies(), async (test) => {
-    await test.get('/db/status')
-      .expect({ connected: true });
+  await routerTest(factory, await factory.getDependencies(), async test => {
+    await test.get('/db/status').expect({ connected: true });
 
-    await test.post('/db/disconnect')
-      .expect(204);
+    await test.post('/db/disconnect').expect(204);
 
-    await test.get('/db/status')
-      .expect({ connected: false });
+    await test.get('/db/status').expect({ connected: false });
   });
 });
 
@@ -213,7 +204,7 @@ test('readme class example', async () => {
         {
           path: '/disconnect',
           method: HttpMethod.POST,
-          async action(ctx, next) {
+          async action() {
             this.db.isConnected = false;
 
             return false;
@@ -227,22 +218,19 @@ test('readme class example', async () => {
       ]);
     }
 
-    static async dbStatus(this: DbRouter & Dependencies, ctx: Context, next: Next) {
+    static async dbStatus(this: DbRouter & Dependencies) {
       return {
         connected: this.db.isConnected,
       };
     }
   }
 
-  await routerTest(new DbRouter(), await new DbRouter().getDependencies(), async (test) => {
-    await test.get('/db/status')
-      .expect({ connected: true });
+  await routerTest(new DbRouter(), await new DbRouter().getDependencies(), async test => {
+    await test.get('/db/status').expect({ connected: true });
 
-    await test.post('/db/disconnect')
-      .expect(204);
+    await test.post('/db/disconnect').expect(204);
 
-    await test.get('/db/status')
-      .expect({ connected: false });
+    await test.get('/db/status').expect({ connected: false });
   });
 });
 
@@ -257,7 +245,7 @@ test('nested routers', async () => {
         {
           path: '/nested',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'nested' };
           },
         },
@@ -278,7 +266,7 @@ test('nested routers', async () => {
         {
           path: '/top',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'top' };
           },
         },
@@ -286,17 +274,12 @@ test('nested routers', async () => {
     },
   };
 
-  await routerTest(factory, await factory.getDependencies(), async (test) => {
-    await test.get('/all/top')
-      .expect({ name: 'top' });
-    await test.get('/all/nested')
-      .expect({ name: 'nested' });
-    await test.get('/all/invalid')
-      .expect(404);
-    await test.get('/top')
-      .expect(404);
-    await test.get('/nested')
-      .expect(404);
+  await routerTest(factory, await factory.getDependencies(), async test => {
+    await test.get('/all/top').expect({ name: 'top' });
+    await test.get('/all/nested').expect({ name: 'nested' });
+    await test.get('/all/invalid').expect(404);
+    await test.get('/top').expect(404);
+    await test.get('/nested').expect(404);
   });
 });
 
@@ -313,7 +296,7 @@ test('nested router with prefix', async () => {
         {
           path: '/nested',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'nested' };
           },
         },
@@ -334,7 +317,7 @@ test('nested router with prefix', async () => {
         {
           path: '/top',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'top' };
           },
         },
@@ -342,13 +325,10 @@ test('nested router with prefix', async () => {
     },
   };
 
-  await routerTest(factory, await factory.getDependencies(), async (test) => {
-    await test.get('/all/top')
-      .expect({ name: 'top' });
-    await test.get('/all/b/nested')
-      .expect({ name: 'nested' });
-    await test.get('/all/nested')
-      .expect(404);
+  await routerTest(factory, await factory.getDependencies(), async test => {
+    await test.get('/all/top').expect({ name: 'top' });
+    await test.get('/all/b/nested').expect({ name: 'nested' });
+    await test.get('/all/nested').expect(404);
   });
 });
 
@@ -365,7 +345,7 @@ test('double nested router', async () => {
         {
           path: '/nested',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'nested-a' };
           },
         },
@@ -386,7 +366,7 @@ test('double nested router', async () => {
         {
           path: '/nested',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'nested-b' };
           },
         },
@@ -407,7 +387,7 @@ test('double nested router', async () => {
         {
           path: '/top',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'top' };
           },
         },
@@ -415,15 +395,11 @@ test('double nested router', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/all/top')
-      .expect({ name: 'top' });
-    await test.get('/all/b/a/nested')
-      .expect({ name: 'nested-a' });
-    await test.get('/all/b/nested')
-      .expect({ name: 'nested-b' });
-    await test.get('/all/nested')
-      .expect(404);
+  await routerTest(factory, {}, async test => {
+    await test.get('/all/top').expect({ name: 'top' });
+    await test.get('/all/b/a/nested').expect({ name: 'nested-a' });
+    await test.get('/all/b/nested').expect({ name: 'nested-b' });
+    await test.get('/all/nested').expect(404);
   });
 });
 
@@ -438,7 +414,7 @@ test('flat nested routers', async () => {
         {
           path: '/nested',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'nested' };
           },
         },
@@ -458,7 +434,7 @@ test('flat nested routers', async () => {
         {
           path: '/top',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { name: 'top' };
           },
         },
@@ -466,13 +442,10 @@ test('flat nested routers', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/top')
-      .expect({ name: 'top' });
-    await test.get('/nested')
-      .expect({ name: 'nested' });
-    await test.get('/invalid')
-      .expect(404);
+  await routerTest(factory, {}, async test => {
+    await test.get('/top').expect({ name: 'top' });
+    await test.get('/nested').expect({ name: 'nested' });
+    await test.get('/invalid').expect(404);
   });
 });
 
@@ -487,7 +460,7 @@ test('multiple methods', async () => {
         {
           path: '/test',
           method: [HttpMethod.GET, HttpMethod.POST],
-          async action(ctx, next) {
+          async action() {
             return { name: 'test' };
           },
         },
@@ -495,13 +468,10 @@ test('multiple methods', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/test')
-      .expect({ name: 'test' });
-    await test.post('/test')
-      .expect({ name: 'test' });
-    await test.put('/test')
-      .expect(405);
+  await routerTest(factory, {}, async test => {
+    await test.get('/test').expect({ name: 'test' });
+    await test.post('/test').expect({ name: 'test' });
+    await test.put('/test').expect(405);
   });
 });
 
@@ -516,7 +486,7 @@ test('empty response', async () => {
         {
           path: '/test-1',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return false;
           },
         },
@@ -524,9 +494,8 @@ test('empty response', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/test-1')
-      .expect(204);
+  await routerTest(factory, {}, async test => {
+    await test.get('/test-1').expect(204);
   });
 });
 
@@ -541,7 +510,7 @@ test('setting body', async () => {
         {
           path: '/test-1',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action(ctx) {
             ctx.body = { foo: 'bar' };
           },
         },
@@ -549,9 +518,8 @@ test('setting body', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/test-1')
-      .expect({ foo: 'bar' });
+  await routerTest(factory, {}, async test => {
+    await test.get('/test-1').expect({ foo: 'bar' });
   });
 });
 
@@ -588,7 +556,9 @@ test('load yaml schema', async () => {
   };
 
   const { path: testDir } = await tempDir();
-  await outputFile(join(testDir, 'test.yml'), `
+  await outputFile(
+    join(testDir, 'test.yml'),
+    `
     type: object
     required: [a, b]
     properties:
@@ -596,7 +566,8 @@ test('load yaml schema', async () => {
         type: string
       b:
         type: string
-  `);
+  `,
+  );
 
   const schema = JSONSchema.loadYaml('test', testDir);
 
@@ -614,10 +585,7 @@ test('json schema validation', async () => {
     },
 
     middleware() {
-      return [
-        bodyparser(),
-        propagateErrors(),
-      ];
+      return [bodyparser(), propagateErrors()];
     },
 
     create(dependencies: {}) {
@@ -629,7 +597,7 @@ test('json schema validation', async () => {
             type: 'object',
             required: ['a', 'b'],
           }),
-          async action(ctx, next) {
+          async action() {
             return true;
           },
         },
@@ -646,7 +614,7 @@ test('json schema validation', async () => {
             },
             additionalProperties: false,
           }),
-          async action(ctx, next) {
+          async action() {
             return true;
           },
         },
@@ -654,17 +622,22 @@ test('json schema validation', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.post('/test').send({ a: true, b: true })
+  await routerTest(factory, {}, async test => {
+    await test
+      .post('/test')
+      .send({ a: true, b: true })
       .expect('true');
 
-    await test.post('/test').send({})
+    await test
+      .post('/test')
+      .send({})
       .expect(400);
 
-    await test.post('/test')
-      .expect(400);
+    await test.post('/test').expect(400);
 
-    await test.post('/additional').send({ a: true, foo: 'bat' })
+    await test
+      .post('/additional')
+      .send({ a: true, foo: 'bat' })
       .expect({
         success: false,
         code: 400,
@@ -681,10 +654,7 @@ test('yup schema validation', async () => {
     },
 
     middleware() {
-      return [
-        bodyparser(),
-        propagateErrors(),
-      ];
+      return [bodyparser(), propagateErrors()];
     },
 
     create(dependencies: {}) {
@@ -692,11 +662,13 @@ test('yup schema validation', async () => {
         {
           path: '/test',
           method: HttpMethod.POST,
-          schema: YupSchema.create(yup => yup.object().shape({
-            foo: yup.string().required(),
-            bar: yup.number(),
-          })),
-          async action(ctx, next) {
+          schema: YupSchema.create(yup =>
+            yup.object().shape({
+              foo: yup.string().required(),
+              bar: yup.number(),
+            }),
+          ),
+          async action() {
             return true;
           },
         },
@@ -704,21 +676,30 @@ test('yup schema validation', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.post('/test').send({ foo: 'string', bar: 101 })
-      .expect(200).expect('true');
+  await routerTest(factory, {}, async test => {
+    await test
+      .post('/test')
+      .send({ foo: 'string', bar: 101 })
+      .expect(200)
+      .expect('true');
 
-    await test.post('/test').send({ foo: 'string' })
-      .expect(200).expect('true');
+    await test
+      .post('/test')
+      .send({ foo: 'string' })
+      .expect(200)
+      .expect('true');
 
-    await test.post('/test').send({ foo: 101, bar: 'string' })
+    await test
+      .post('/test')
+      .send({ foo: 101, bar: 'string' })
       .expect(400);
 
-    await test.post('/test').send({})
+    await test
+      .post('/test')
+      .send({})
       .expect(400);
 
-    await test.post('/test')
-      .expect(400);
+    await test.post('/test').expect(400);
   });
 });
 
@@ -729,13 +710,10 @@ test('query schema validation', async () => {
     },
 
     middleware() {
-      return [
-        bodyparser(),
-        propagateErrors(),
-      ];
+      return [bodyparser(), propagateErrors()];
     },
 
-    create(dependencies: {}) {
+    create() {
       return [
         {
           path: '/test',
@@ -747,7 +725,7 @@ test('query schema validation', async () => {
               x: { type: 'string' },
             },
           }),
-          async action(ctx, next) {
+          async action() {
             return true;
           },
         },
@@ -755,18 +733,17 @@ test('query schema validation', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.post('/test?x=2jk')
-      .expect(200).expect('true');
+  await routerTest(factory, {}, async test => {
+    await test
+      .post('/test?x=2jk')
+      .expect(200)
+      .expect('true');
 
-    await test.post('/test?y=2jk')
-      .expect(400);
+    await test.post('/test?y=2jk').expect(400);
 
-    await test.post('/test?x=111')
-      .expect(200);
+    await test.post('/test?x=111').expect(200);
 
-    await test.post('/test')
-      .expect(400);
+    await test.post('/test').expect(400);
   });
 });
 
@@ -777,18 +754,15 @@ test('extract response', async () => {
     },
 
     middleware() {
-      return [
-        bodyparser(),
-        propagateErrors(),
-      ];
+      return [bodyparser(), propagateErrors()];
     },
 
-    create(dependencies: {}) {
+    create() {
       return [
         {
           path: '/test',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return {
               name: 'Albert',
               password: 'psswd',
@@ -813,17 +787,16 @@ test('extract response', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/test')
-      .expect({
-        name: 'Albert',
-        access: {
-          permissions: ['admin'],
-          viewable: {
-            resourceA: true,
-          },
+  await routerTest(factory, {}, async test => {
+    await test.get('/test').expect({
+      name: 'Albert',
+      access: {
+        permissions: ['admin'],
+        viewable: {
+          resourceA: true,
         },
-      });
+      },
+    });
   });
 });
 
@@ -838,7 +811,7 @@ test('action path array', async () => {
         {
           path: ['/test', '/test/1', '/1'],
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return { test: true };
           },
         },
@@ -846,17 +819,21 @@ test('action path array', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/test')
-      .expect({ test: true }).expect(200);
-    await test.get('/test/1')
-      .expect({ test: true }).expect(200);
-    await test.get('/1')
-      .expect({ test: true }).expect(200);
-    await test.get('/test/2')
-      .expect(404);
-    await test.get('/2')
-      .expect(404);
+  await routerTest(factory, {}, async test => {
+    await test
+      .get('/test')
+      .expect({ test: true })
+      .expect(200);
+    await test
+      .get('/test/1')
+      .expect({ test: true })
+      .expect(200);
+    await test
+      .get('/1')
+      .expect({ test: true })
+      .expect(200);
+    await test.get('/test/2').expect(404);
+    await test.get('/2').expect(404);
   });
 });
 
@@ -873,7 +850,7 @@ test('action path array with prefix', async () => {
         {
           path: ['/test', '/test/1', '/1'],
           method: [HttpMethod.GET, HttpMethod.POST],
-          async action(ctx, next) {
+          async action() {
             return { test: true };
           },
         },
@@ -881,21 +858,23 @@ test('action path array with prefix', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/prefix/test')
-      .expect({ test: true }).expect(200);
-    await test.get('/prefix/test/1')
-      .expect({ test: true }).expect(200);
-    await test.get('/prefix/1')
-      .expect({ test: true }).expect(200);
-    await test.get('/prefix/test/2')
-      .expect(404);
-    await test.get('/prefix/2')
-      .expect(404);
-    await test.get('/test')
-      .expect(404);
-    await test.get('/test/1')
-      .expect(404);
+  await routerTest(factory, {}, async test => {
+    await test
+      .get('/prefix/test')
+      .expect({ test: true })
+      .expect(200);
+    await test
+      .get('/prefix/test/1')
+      .expect({ test: true })
+      .expect(200);
+    await test
+      .get('/prefix/1')
+      .expect({ test: true })
+      .expect(200);
+    await test.get('/prefix/test/2').expect(404);
+    await test.get('/prefix/2').expect(404);
+    await test.get('/test').expect(404);
+    await test.get('/test/1').expect(404);
   });
 });
 
@@ -906,9 +885,7 @@ test('empty body', async () => {
     },
 
     middleware() {
-      return [
-        propagateErrors(),
-      ];
+      return [propagateErrors()];
     },
 
     create(dependencies: {}) {
@@ -917,7 +894,7 @@ test('empty body', async () => {
           path: '/test',
           method: HttpMethod.POST,
           schema: { validate: async () => true },
-          async action(ctx, next) {
+          async action() {
             return {};
           },
         },
@@ -925,7 +902,7 @@ test('empty body', async () => {
     },
   };
 
-  await routerTest(factory, await factory.getDependencies(), async (test) => {
+  await routerTest(factory, await factory.getDependencies(), async test => {
     await test.post('/test').expect(400);
   });
 });
@@ -937,9 +914,7 @@ test('error data', async () => {
     },
 
     middleware() {
-      return [
-        propagateErrors(),
-      ];
+      return [propagateErrors()];
     },
 
     create(dependencies: {}) {
@@ -947,7 +922,7 @@ test('error data', async () => {
         {
           path: '/test',
           method: HttpMethod.POST,
-          async action(ctx, next) {
+          async action() {
             throw err(400, 'foo').withData({ bar: true });
           },
         },
@@ -955,8 +930,9 @@ test('error data', async () => {
     },
   };
 
-  await routerTest(factory, await factory.getDependencies(), async (test) => {
-    await test.post('/test')
+  await routerTest(factory, await factory.getDependencies(), async test => {
+    await test
+      .post('/test')
       .expect(400)
       .expect({ success: false, code: -1, message: 'foo', data: { bar: true } });
   });
@@ -973,10 +949,7 @@ test('typed route', async () => {
     },
 
     middleware() {
-      return [
-        bodyparser(),
-        propagateErrors(),
-      ];
+      return [bodyparser(), propagateErrors()];
     },
 
     create(dependencies) {
@@ -987,24 +960,22 @@ test('typed route', async () => {
           schema: SchemaBuilder.emptySchema()
             .addInteger('input')
             .addInteger('input2'),
-          async action(ctx, body) {
+          async action(_, body) {
             return { ...body, ...this };
           },
         }),
         {
           path: 'test2',
           method: HttpMethod.GET,
-          async action(ctx) {
+          async action() {
             return {};
           },
         },
         routeWithBody({
           path: '/test3',
           method: HttpMethod.PUT,
-          schema: JSONSchema.build(b => b.emptySchema()
-            .addInteger('input'),
-          ),
-          async action(ctx, body) {
+          schema: JSONSchema.build(b => b.emptySchema().addInteger('input')),
+          async action(_, body) {
             return {
               input: body.input,
             };
@@ -1021,7 +992,7 @@ test('typed route', async () => {
               input: { type: 'string' },
             },
           } as const),
-          async action(ctx, body) {
+          async action(_, body) {
             return {
               input: body.input,
             };
@@ -1031,33 +1002,46 @@ test('typed route', async () => {
     },
   };
 
-  await routerTest(factory, await factory.getDependencies(), async (test) => {
-    await test.post('/test')
+  await routerTest(factory, await factory.getDependencies(), async test => {
+    await test.post('/test').expect(400);
+
+    await test
+      .post('/test')
+      .send({ input: 1, input2: '2' })
       .expect(400);
 
-    await test.post('/test').send({ input: 1, input2: '2' })
+    await test
+      .put('/test3')
+      .send({})
       .expect(400);
 
-    await test.put('/test3').send({})
-      .expect(400);
-
-    await test.put('/test3').send({ input: 1 })
+    await test
+      .put('/test3')
+      .send({ input: 1 })
       .expect({ input: 1 });
 
-    await test.put('/test4').send({})
+    await test
+      .put('/test4')
+      .send({})
       .expect(400);
 
-    await test.put('/test4').send({ input: 1 })
+    await test
+      .put('/test4')
+      .send({ input: 1 })
       .expect(400);
 
-    await test.put('/test4').send({ input: 'in' })
+    await test
+      .put('/test4')
+      .send({ input: 'in' })
       .expect({ input: 'in' });
 
-    await test.get('/test2')
-      .expect({});
+    await test.get('/test2').expect({});
 
-    await test.post('/test').send({ input: 1, input2: 2 })
-      .expect(200).expect({ input: 1, input2: 2, foo: 'bar' });
+    await test
+      .post('/test')
+      .send({ input: 1, input2: 2 })
+      .expect(200)
+      .expect({ input: 1, input2: 2, foo: 'bar' });
   });
 });
 
@@ -1082,7 +1066,7 @@ test('docs', async () => {
               bar: true,
             },
           },
-          async action(ctx, body) {
+          async action(_, body) {
             return { foo: { bar: body.input } };
           },
         }),
@@ -1107,7 +1091,7 @@ test('docs', async () => {
           returning: {
             foo: [{ bar: true }],
           },
-          async action(ctx) {
+          async action() {
             return { foo: [{ bar: 22 }] };
           },
         },
@@ -1199,7 +1183,7 @@ test('double middleware', async () => {
         {
           path: '/test',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action(ctx) {
             return ctx.state.foo;
           },
         },
@@ -1224,11 +1208,12 @@ test('double middleware', async () => {
       ];
     },
 
-    create() { return []; },
+    create() {
+      return [];
+    },
   };
 
-  await routerTest(nester, {}, async (test) => {
-    await test.get('/nest/inner/test')
-      .expect({ bar: 'baz', bat: 'foo' });
+  await routerTest(nester, {}, async test => {
+    await test.get('/nest/inner/test').expect({ bar: 'baz', bat: 'foo' });
   });
 });
