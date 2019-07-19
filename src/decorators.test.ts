@@ -125,7 +125,7 @@ test('api field in returning', async () => {
     },
 
     middleware() {
-      return [bodyparser(), propagateErrors()];
+      return [bodyparser(), propagateErrors(true)];
     },
 
     create() {
