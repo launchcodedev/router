@@ -1,4 +1,4 @@
-import * as Koa from 'koa';
+/* eslint-disable import/no-dynamic-require, global-require, no-throw-literal, no-ex-assign */
 import * as Router from 'koa-router';
 import * as fs from 'fs-extra';
 import * as Ajv from 'ajv';
@@ -6,14 +6,17 @@ import * as yup from 'yup';
 import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as resolveFrom from 'resolve-from';
-import * as OpenAPI from '@serafin/open-api';
 import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
 import { Extraction, extract } from '@servall/mapper';
-import { Json, NonOptional } from '@servall/ts';
+import { Json } from '@servall/ts';
+// this module actually has no js, so eslint fails to resolve it
+// eslint-disable-next-line import/no-unresolved
+import * as OpenAPI from '@serafin/open-api';
+
 export * from './decorators';
 
 export { SchemaBuilder } from '@serafin/schema-builder';
-export const emptySchema = SchemaBuilder.emptySchema;
+export const { emptySchema } = SchemaBuilder;
 
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
 type ReturnType<T> = T extends (...args: any) => infer R ? R : never;
@@ -28,8 +31,11 @@ export type Next = ArgumentTypes<Middleware>[1];
 
 export class BaseError extends Error {
   code: number = 0;
+
   message: string = 'Something went wrong';
+
   statusCode: number = 500;
+
   data?: Json;
 
   constructor(message: string, code: number = 500, statusCode: number = code) {
@@ -63,7 +69,7 @@ export enum HttpMethod {
   HEAD = 'head',
   OPTIONS = 'options',
 
-  /// special value that binds to all http methods
+  // special value that binds to all http methods
   all = 'all',
 }
 
@@ -73,6 +79,7 @@ export interface Schema {
 
 export class JSONSchema<T> implements Schema {
   readonly ajvValidate: Ajv.ValidateFunction;
+
   readonly raw: object;
 
   constructor(private readonly builder: SchemaBuilder<T>) {
@@ -112,23 +119,24 @@ export class JSONSchema<T> implements Schema {
       return true;
     }
 
-    const err = this.ajvValidate.errors &&
+    const err =
+      this.ajvValidate.errors &&
       this.ajvValidate.errors
-      .map(({ keyword, dataPath, message, params }) => {
-        if (keyword === 'additionalProperties') {
-          return `${message}: ${(params as any).additionalProperty}`;
-        }
+        .map(({ keyword, dataPath, message, params }) => {
+          if (keyword === 'additionalProperties') {
+            return `${message}: ${(params as any).additionalProperty}`;
+          }
 
-        return `${dataPath}: ${message}`;
-      })
-      .join(', ');
+          return `${dataPath}: ${message}`;
+        })
+        .join(', ');
 
     return new BaseError(`validation error: [${err}]`, 400);
-  }
+  };
 }
 
 export class YupSchema<T> implements Schema {
-  constructor(readonly raw: yup.Schema<T>) {}
+  constructor(public readonly raw: yup.Schema<T>) {}
 
   static create<T>(callback: (y: typeof yup) => yup.Schema<T>) {
     return new YupSchema<T>(callback(yup));
@@ -144,7 +152,7 @@ export class YupSchema<T> implements Schema {
 
       return new BaseError(`validation error: [${err}]`, 400);
     }
-  }
+  };
 }
 
 export type RouteActionResponse = Promise<object | string | number | boolean | void>;
@@ -163,7 +171,7 @@ export interface RouteWithContext<Ctx> {
   path: string | string[];
   docs?: OpenAPI.OperationObject & {
     // we override this to enforce non-invalid responses objects
-    responses: { [statusCode: number]: OpenAPI.ResponseObject },
+    responses: { [statusCode: number]: OpenAPI.ResponseObject };
   };
   method: HttpMethod | HttpMethod[];
   schema?: Schema;
@@ -183,28 +191,24 @@ export const routeWithBody = route;
 
 export function route<Ctx, Body = never, Query = never>(
   route: Omit<RouteWithContext<Ctx>, 'action' | 'schema' | 'querySchema'> & {
-    schema?: SchemaBuilder<Body> | JSONSchema<Body>,
-    querySchema?: SchemaBuilder<Query> | JSONSchema<Query>,
-    action: (
-      this: Ctx,
-      ctx: Context,
-      body: Body,
-      query: Query,
-      next: Next,
-    ) => RouteActionResponse,
+    schema?: SchemaBuilder<Body> | JSONSchema<Body>;
+    querySchema?: SchemaBuilder<Query> | JSONSchema<Query>;
+    action: (this: Ctx, ctx: Context, body: Body, query: Query, next: Next) => RouteActionResponse;
   },
 ): RouteWithContext<Ctx> {
-  const schema = route.schema
-    ? route.schema instanceof JSONSchema
-      ? route.schema
-      : new JSONSchema(route.schema)
-    : undefined;
+  let schema;
+  let querySchema;
 
-  const querySchema = route.querySchema
-    ? route.querySchema instanceof JSONSchema
-      ? route.querySchema
-      : new JSONSchema(route.querySchema)
-    : undefined;
+  if (route.schema) {
+    schema = route.schema instanceof JSONSchema ? route.schema : new JSONSchema(route.schema);
+  }
+
+  if (route.querySchema) {
+    querySchema =
+      route.querySchema instanceof JSONSchema
+        ? route.querySchema
+        : new JSONSchema(route.querySchema);
+  }
 
   return {
     ...route,
@@ -221,8 +225,10 @@ export const nestedRouter = (dirname: string, prefix?: string): RouteFactory<voi
     prefix,
     nested: () => findRouters(dirname),
 
-    getDependencies() { return; },
-    create(dependencies) { return []; },
+    getDependencies() {},
+    create() {
+      return [];
+    },
   };
 };
 
@@ -246,21 +252,26 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
     const nested = await factory.nested(deps);
 
     // NOTE: dependencies cannot be injected here, which may be difficult for testing
-    routes.push(...await createAllRoutes(nested));
+    routes.push(...(await createAllRoutes(nested)));
   }
 
   type FlatRoute = (Route | MadeRoute) & { path: string };
 
-  const flatRoutes = routes.reduce((routes, route) => {
-    if (Array.isArray(route.path)) {
-      return routes.concat(route.path.map(path => ({
-        ...route,
-        path,
-      })));
-    }
+  const flatRoutes = routes.reduce(
+    (routes, route) => {
+      if (Array.isArray(route.path)) {
+        return routes.concat(
+          route.path.map(path => ({
+            ...route,
+            path,
+          })),
+        );
+      }
 
-    return routes.concat(route as FlatRoute);
-  }, [] as FlatRoute[]);
+      return routes.concat(route as FlatRoute);
+    },
+    [] as FlatRoute[],
+  );
 
   return flatRoutes.map(route => ({
     ...route,
@@ -276,9 +287,11 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
 
 export const createAllRoutes = async (factories: RouteFactory<any>[]) => {
   // inject dependencies
-  const routerRoutes = await Promise.all(factories.map(async (factory) => {
-    return createRoutes(factory, await factory.getDependencies());
-  }));
+  const routerRoutes = await Promise.all(
+    factories.map(async factory => {
+      return createRoutes(factory, await factory.getDependencies());
+    }),
+  );
 
   // flatten all routes
   return routerRoutes.reduce<MadeRoute[]>((acc, routes) => acc.concat(routes), []);
@@ -290,16 +303,18 @@ export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
     .filter(n => !n.match(/\.d\.ts$/))
     .filter(n => !n.match(/\.test\..*$/))
     .filter(n => !n.match(/^index\./))
-    .map((filename) => {
-      const { default: factory }: {
-        default: RouteFactory<any>,
+    .map(filename => {
+      const {
+        default: factory,
+      }: {
+        default: RouteFactory<any>;
       } = require(join(dir, filename));
 
       if (!factory) throw new Error(`missing default export: ${join(dir, filename)}`);
 
       // we account for 'export default class implements RouteFactory' here by calling `new`
       if (!factory.create) {
-        const FactoryClass = factory as any as (new () => RouteFactory<any>);
+        const FactoryClass = (factory as any) as (new () => RouteFactory<any>);
         return new FactoryClass();
       }
 
@@ -314,7 +329,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
   }
 
   // Call router.get(), router.post(), router.put(), etc, to set up routes
-  routes.forEach((route) => {
+  routes.forEach(route => {
     const {
       path,
       action,
@@ -332,7 +347,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
       console.log(`\t[${methods.map(m => m.toUpperCase()).join(', ')}] ${path}`);
     }
 
-    methods.forEach((method) => {
+    methods.forEach(method => {
       // access the router.get function dynamically from HttpMethod strings
       const bindFn = router[method].bind(router);
 
@@ -341,7 +356,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
 
       if (schema) {
         bindFn(path, async (ctx, next) => {
-          const { body } = (ctx.request as any);
+          const { body } = ctx.request as any;
 
           if (body === undefined) {
             throw new BaseError('a request body is required', 400);
@@ -390,8 +405,9 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
           } else if (response === undefined && ctx.body === undefined) {
             throw {
               status: 500,
-              message: `You did not return anything in the route '${path}'.`
-                     + "If this was on purpose, please return 'false'",
+              message:
+                `You did not return anything in the route '${path}'.` +
+                "If this was on purpose, please return 'false'",
             };
           } else if (!ctx.body) {
             ctx.status = 204;
@@ -431,7 +447,7 @@ export const createRouter = async (dir: string, debug = false) => {
 
 export const createOpenAPI = (
   routes: MadeRoute[],
-  meta: { info: OpenAPI.InfoObject, servers?: OpenAPI.ServerObject[] },
+  meta: { info: OpenAPI.InfoObject; servers?: OpenAPI.ServerObject[] },
 ) => {
   const paths: OpenAPI.PathObject = {};
 
@@ -444,14 +460,7 @@ export const createOpenAPI = (
 
   for (const route of routes) {
     // TODO: extract parameters from paths
-    const {
-      docs,
-      path,
-      method,
-      schema,
-      querySchema,
-      returning,
-    } = route;
+    const { docs, path, method, schema } = route;
 
     const desc: OpenAPI.OperationObject = docs
       ? { ...docs }

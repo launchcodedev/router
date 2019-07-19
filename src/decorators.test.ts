@@ -2,16 +2,12 @@ import { routerTest } from '@servall/router-testing';
 import * as bodyparser from 'koa-bodyparser';
 import { extract } from '@servall/mapper';
 import { ApiField, getApiFields } from './decorators';
-import {
-  RouteFactory,
-  HttpMethod,
-  bindRouteActions,
-  propagateErrors,
-} from './index';
+import { RouteFactory, HttpMethod, propagateErrors } from './index';
 
 test('api field', () => {
   class MyEntity {
     propertyA: boolean = true;
+
     propertyB: string = 'default';
 
     @ApiField()
@@ -26,11 +22,13 @@ test('api field nested', () => {
   class MyOtherEntity {
     @ApiField()
     propertyA: boolean = true;
+
     propertyB: string = 'default';
   }
 
   class MyEntity {
     propertyA: boolean = true;
+
     propertyB: string = 'default';
 
     @ApiField()
@@ -41,24 +39,25 @@ test('api field nested', () => {
   }
 
   expect(getApiFields(MyEntity)).toEqual({ propertyC: true, other: { propertyA: true } });
-  expect(extract(new MyEntity(), getApiFields(MyEntity)))
-    .toEqual({
-      propertyC: 12,
-      other: {
-        propertyA: true,
-      },
-    });
+  expect(extract(new MyEntity(), getApiFields(MyEntity))).toEqual({
+    propertyC: 12,
+    other: {
+      propertyA: true,
+    },
+  });
 });
 
 test('api field arr', () => {
   class MyOtherEntity {
     @ApiField()
     propertyA: boolean = true;
+
     propertyB: string = 'default';
   }
 
   class MyEntity {
     propertyA: boolean = true;
+
     propertyB: string = 'default';
 
     @ApiField()
@@ -69,20 +68,17 @@ test('api field arr', () => {
   }
 
   expect(getApiFields(MyEntity)).toEqual({ propertyC: true, other: [{ propertyA: true }] });
-  expect(extract(new MyEntity(), getApiFields(MyEntity)))
-    .toEqual({
-      propertyC: 12,
-      other: [
-        { propertyA: true },
-        { propertyA: true },
-      ],
-    });
+  expect(extract(new MyEntity(), getApiFields(MyEntity))).toEqual({
+    propertyC: 12,
+    other: [{ propertyA: true }, { propertyA: true }],
+  });
 });
 
 test('api field subclassing', () => {
   class MyOtherEntity {
     @ApiField()
     propertyA: boolean = true;
+
     propertyB: string = 'default';
   }
 
@@ -92,11 +88,10 @@ test('api field subclassing', () => {
   }
 
   expect(getApiFields(MyEntity)).toEqual({ propertyC: true, propertyA: true });
-  expect(extract(new MyEntity(), getApiFields(MyEntity)))
-    .toEqual({
-      propertyC: 12,
-      propertyA: true,
-    });
+  expect(extract(new MyEntity(), getApiFields(MyEntity))).toEqual({
+    propertyC: 12,
+    propertyA: true,
+  });
 });
 
 test('api field with custom type', () => {
@@ -106,12 +101,11 @@ test('api field with custom type', () => {
   }
 
   expect(getApiFields(MyEntity)).toEqual({ propertyC: { baz: true } });
-  expect(extract(new MyEntity(), getApiFields(MyEntity)))
-    .toEqual({
-      propertyC: {
-        baz: 'bat',
-      },
-    });
+  expect(extract(new MyEntity(), getApiFields(MyEntity))).toEqual({
+    propertyC: {
+      baz: 'bat',
+    },
+  });
 });
 
 test('api field in returning', async () => {
@@ -131,18 +125,15 @@ test('api field in returning', async () => {
     },
 
     middleware() {
-      return [
-        bodyparser(),
-        propagateErrors(),
-      ];
+      return [bodyparser(), propagateErrors()];
     },
 
-    create(dependencies: {}) {
+    create() {
       return [
         {
           path: '/test',
           method: HttpMethod.GET,
-          async action(ctx, next) {
+          async action() {
             return new MyEntity();
           },
           returning: getApiFields(MyEntity),
@@ -151,13 +142,12 @@ test('api field in returning', async () => {
     },
   };
 
-  await routerTest(factory, {}, async (test) => {
-    await test.get('/test')
-      .expect({
-        // note no propertyA
-        propertyB: 'default',
-        propertyC: 12,
-      });
+  await routerTest(factory, {}, async test => {
+    await test.get('/test').expect({
+      // note no propertyA
+      propertyB: 'default',
+      propertyC: 12,
+    });
   });
 });
 
@@ -165,12 +155,15 @@ test('api field merging', () => {
   class MyEntity {
     @ApiField()
     propertyA: boolean = true;
+
     propertyB: string = 'default';
 
     @ApiField()
     propertyC: number = 12;
   }
 
-  expect(getApiFields(MyEntity, { propertyA: false }))
-    .toEqual({ propertyA: false, propertyC: true });
+  expect(getApiFields(MyEntity, { propertyA: false })).toEqual({
+    propertyA: false,
+    propertyC: true,
+  });
 });
