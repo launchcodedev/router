@@ -507,12 +507,15 @@ const filterInternalMessages = (
  */
 export const propagateErrors = (
   includeInternalErrors: boolean,
-  transform?: (body: {
-    success: false;
-    code: number;
-    message: string;
-    data: any | null;
-  }) => Promise<any> | any,
+  transform?: (
+    err: any,
+    body: {
+      success: false;
+      code: number;
+      message: string;
+      data: any | null;
+    },
+  ) => Promise<any> | any,
 ): Middleware => async (ctx, next) => {
   try {
     await next();
@@ -526,7 +529,7 @@ export const propagateErrors = (
       data: err.data || null,
     };
 
-    ctx.body = transform ? await transform(body) : body;
+    ctx.body = transform ? await transform(err, body) : body;
   }
 };
 
