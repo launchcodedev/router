@@ -419,7 +419,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
           error.code = error.code || -1;
           error.status = error.status || error.statusCode || 500;
           error.internalMessage = error.message;
-          error.stack = error.stack && stackTrace.parse(error.stack);
+          error.stackTrace = error.stack && stackTrace.parse(error.stack);
 
           // don't reveal internal message unless you've opted-in by extending BaseError
           if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
