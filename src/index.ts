@@ -5,6 +5,7 @@ import * as Ajv from 'ajv';
 import * as yup from 'yup';
 import * as YAML from 'js-yaml';
 import { join } from 'path';
+import * as stackTrace from 'stacktrace-parser';
 import * as resolveFrom from 'resolve-from';
 import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
 import { Extraction, extract } from '@servall/mapper';
@@ -418,6 +419,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
           error.code = error.code || -1;
           error.status = error.status || error.statusCode || 500;
           error.internalMessage = error.message;
+          error.stackTrace = error.stack && stackTrace.parse(error.stack);
 
           // don't reveal internal message unless you've opted-in by extending BaseError
           if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
@@ -503,21 +505,31 @@ const filterInternalMessages = (
  *
  * Looks like: { success: false, code: number, message: string, data: any | null }
  */
-export const propagateErrors = (includeInternalErrors: boolean): Middleware => async (
-  ctx,
-  next,
-) => {
+export const propagateErrors = (
+  includeInternalErrors: boolean,
+  transform?: (
+    err: any,
+    body: {
+      success: false;
+      code: number;
+      message: string;
+      data: any | null;
+    },
+  ) => Promise<any> | any,
+): Middleware => async (ctx, next) => {
   try {
     await next();
   } catch (err) {
     ctx.status = err.status || err.statusCode || 500;
 
-    ctx.body = {
-      success: false,
+    const body = {
+      success: false as const,
       code: err.code || ctx.status,
       message: filterInternalMessages(ctx.status, err.message, includeInternalErrors),
       data: err.data || null,
     };
+
+    ctx.body = transform ? await transform(err, body) : body;
   }
 };
 
