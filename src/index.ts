@@ -515,6 +515,7 @@ export const propagateErrors = (
       message: string;
       data: any | null;
     },
+    ctx: Context,
   ) => Promise<any> | any,
 ): Middleware => async (ctx, next) => {
   try {
@@ -529,7 +530,7 @@ export const propagateErrors = (
       data: err.data || null,
     };
 
-    ctx.body = transform ? await transform(err, body) : body;
+    ctx.body = transform ? await transform(err, body, ctx) : body;
   }
 };
 
