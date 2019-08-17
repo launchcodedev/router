@@ -518,19 +518,30 @@ export const propagateErrors = (
     ctx: Context,
   ) => Promise<any> | any,
 ): Middleware => async (ctx, next) => {
+  if (ctx.state.hasPropagateErrorWrapping) {
+    return next();
+  }
+
+  ctx.state.hasPropagateErrorWrapping = true;
+
   try {
     await next();
-  } catch (err) {
-    ctx.status = err.status || err.statusCode || 500;
+  } catch (error) {
+    ctx.status = error.status || error.statusCode || 500;
 
     const body = {
       success: false as const,
-      code: err.code || ctx.status,
-      message: filterInternalMessages(ctx.status, err.message, includeInternalErrors),
-      data: err.data || null,
+      code: error.code || ctx.status,
+      message: filterInternalMessages(ctx.status, error.message, includeInternalErrors),
+      data: error.data || null,
     };
 
-    ctx.body = transform ? await transform(err, body, ctx) : body;
+    const response = transform ? await transform(error, body, ctx) : body;
+
+    ctx.body = response;
+
+    // app can listen for this event for global error handling
+    ctx.app.emit('servall-err', { error, response }, ctx);
   }
 };
 
