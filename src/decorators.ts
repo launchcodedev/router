@@ -14,14 +14,14 @@ const inject = (target: any, base = Object.getPrototypeOf(target)) => {
 };
 
 export const ApiField = (fieldType?: Extraction | (() => Function | [Function])) =>
-  function(klass: any, name: string) {
+  function ApiFieldDecorator(klass: any, name: string) {
     const target = inject(klass.constructor);
 
     if (!target.__apiFields[name]) {
       target.__apiFields[name] = fieldType || true;
     }
 
-    target.getApiFields = function() {
+    target.getApiFields = function(seen: any[] = []) {
       const extract: any = {};
 
       Object.entries(target.__apiFields as PrivateApiFields).forEach(([name, val]) => {
@@ -38,10 +38,10 @@ export const ApiField = (fieldType?: Extraction | (() => Function | [Function]))
 
           if (Array.isArray(nested) && nested.length === 1) {
             // @ApiField(() => [Type]) for array mapping is special
-            extract[name] = [getApiFields(nested[0])];
+            extract[name] = [getApiFields(nested[0], undefined, seen)];
           } else {
             // @ApiField(() => Type)
-            extract[name] = getApiFields(nested);
+            extract[name] = getApiFields(nested, undefined, seen);
           }
         }
       });
@@ -50,16 +50,26 @@ export const ApiField = (fieldType?: Extraction | (() => Function | [Function]))
     };
   };
 
-export const getApiFields = (klass: any, and?: object): { [key: string]: Extraction } => {
+export const getApiFields = (
+  klass: any,
+  and?: object,
+  seen: any[] = [],
+): { [key: string]: Extraction } => {
   let fields = {};
 
   if (klass) {
+    // short circuit if we've seen this class / entity before while recursing
+    if (seen.includes(klass) || seen.includes(klass.constructor)) {
+      // seen isn't part of the public api, it's only used in recursion
+      return false as any;
+    }
+
     if (klass.getApiFields) {
-      fields = klass.getApiFields();
+      fields = klass.getApiFields(seen.concat(klass));
     }
 
     if (klass.constructor.getApiFields) {
-      fields = klass.constructor.getApiFields();
+      fields = klass.constructor.getApiFields(seen.concat(klass.constructor));
     }
   }
 

@@ -47,6 +47,43 @@ test('api field nested', () => {
   });
 });
 
+test('api field recursion 1', () => {
+  class EntityA {
+    @ApiField(() => EntityB) entityB!: unknown;
+  }
+  class EntityB {
+    @ApiField(() => EntityA) entityA!: unknown;
+  }
+
+  expect(getApiFields(EntityA)).toEqual({
+    entityB: {
+      entityA: false,
+    },
+  });
+});
+
+test('api field recursion 2', () => {
+  class EntityA {
+    @ApiField(() => EntityC) entityC!: unknown;
+  }
+  class EntityB {
+    @ApiField(() => EntityA) entityA!: unknown;
+    @ApiField(() => EntityC) entityC!: unknown;
+  }
+  class EntityC {
+    @ApiField(() => EntityB) entityB!: unknown;
+  }
+
+  expect(getApiFields(EntityA)).toEqual({
+    entityC: {
+      entityB: {
+        entityA: false,
+        entityC: false,
+      },
+    },
+  });
+});
+
 test('api field arr', () => {
   class MyOtherEntity {
     @ApiField()
