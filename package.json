@@ -19,30 +19,31 @@
     "prepublishOnly": "yarn build",
     "lint": "dev lint",
     "fix": "dev lint --fix",
-    "test": "jest",
-    "cz": "git-cz"
+    "test": "jest"
   },
   "devDependencies": {
     "@commitlint/cli": "8",
-    "@servall/commitlint": "1.0.0-rc.1",
-    "@servall/dev": "0.0.10-beta.11",
+    "@serafin/schema-builder": "0.9",
+    "@servall/commitlint": "1",
+    "@servall/dev": "0.0.10-beta.13",
+    "@servall/eslint-config": "0.1",
+    "@servall/jest": "0.1",
+    "@servall/prettier": "0.1",
     "@servall/router": "link:./.",
     "@servall/router-testing": "1",
+    "@servall/tsconfig": "0.1",
     "@types/fs-extra": "8",
     "@types/jest": "24",
     "@types/js-yaml": "3",
     "@types/koa": "2",
     "@types/koa-bodyparser": "4",
     "@types/lodash": "4",
-    "commitizen": "4",
-    "cz-conventional-changelog": "3",
     "husky": "3",
     "jest": "24",
     "koa": "2",
     "koa-bodyparser": "4",
-    "lint-staged": "9",
+    "koa-router": "7",
     "tmp-promise": "1",
-    "ts-jest": "24",
     "typescript": "3"
   },
   "peerDependencies": {
@@ -55,47 +56,28 @@
     "@servall/mapper": "0.1",
     "@servall/ts": "0.2",
     "@types/koa-router": "7",
-    "@types/yup": "0.26",
-    "ajv": "6",
     "fs-extra": "8",
     "js-yaml": "3",
     "koa-router": "7",
     "lodash": "4",
     "resolve-from": "5",
-    "stacktrace-parser": "0.1",
-    "yup": "0.26"
+    "stacktrace-parser": "0.1"
+  },
+  "prettier": "@servall/prettier",
+  "eslintConfig": {
+    "extends": "@servall"
   },
   "jest": {
-    "preset": "ts-jest",
-    "testMatch": null,
-    "testRegex": "(tests/.*|src/.*\\.test)\\.(ts|js)$",
-    "testPathIgnorePatterns": [
-      ".yarn-cache"
-    ],
-    "modulePathIgnorePatterns": [
-      ".yarn-cache"
-    ],
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
-    }
+    "preset": "@servall/jest"
   },
   "husky": {
     "hooks": {
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
-      "pre-commit": "lint-staged"
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
-  },
-  "lint-staged": {
-    "**/*.ts": "yarn lint"
   },
   "commitlint": {
     "extends": [
       "@servall/commitlint"
     ]
-  },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
   }
 }

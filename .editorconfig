@@ -1,3 +1,6 @@
+# please upstream changes!
+# https://gitlab.servalldatasystems.com/meat-n-potatoes/dotfiles
+
 root = true
 
 [*]
