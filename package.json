@@ -23,7 +23,6 @@
   },
   "devDependencies": {
     "@commitlint/cli": "8",
-    "@serafin/schema-builder": "0.9",
     "@servall/commitlint": "1",
     "@servall/dev": "0.0.10-beta.13",
     "@servall/eslint-config": "0.1",
@@ -42,7 +41,6 @@
     "jest": "24",
     "koa": "2",
     "koa-bodyparser": "4",
-    "koa-router": "7",
     "tmp-promise": "1",
     "typescript": "3"
   },
@@ -56,12 +54,15 @@
     "@servall/mapper": "0.1",
     "@servall/ts": "0.2",
     "@types/koa-router": "7",
+    "@types/yup": "0.26",
+    "ajv": "6",
     "fs-extra": "8",
     "js-yaml": "3",
     "koa-router": "7",
     "lodash": "4",
     "resolve-from": "5",
-    "stacktrace-parser": "0.1"
+    "stacktrace-parser": "0.1",
+    "yup": "0.26"
   },
   "prettier": "@servall/prettier",
   "eslintConfig": {
