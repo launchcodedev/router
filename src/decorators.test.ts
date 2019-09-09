@@ -131,6 +131,20 @@ test('api field subclassing', () => {
   });
 });
 
+test('api field subclassing and disabling', () => {
+  class MyOtherEntity {
+    @ApiField()
+    propertyA: boolean = true;
+  }
+
+  class MyEntity extends MyOtherEntity {
+    @ApiField(false)
+    propertyA!: boolean;
+  }
+
+  expect(getApiFields(MyEntity)).toEqual({ propertyA: false });
+});
+
 test('api field with custom type', () => {
   class MyEntity {
     @ApiField({ baz: true })

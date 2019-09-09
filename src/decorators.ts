@@ -17,9 +17,7 @@ export const ApiField = (fieldType?: Extraction | (() => Function | [Function]))
   function ApiFieldDecorator(klass: any, name: string) {
     const target = inject(klass.constructor);
 
-    if (!target.__apiFields[name]) {
-      target.__apiFields[name] = fieldType || true;
-    }
+    target.__apiFields[name] = fieldType === undefined ? true : fieldType;
 
     target.getApiFields = function(seen: any[] = []) {
       const extract: any = {};
