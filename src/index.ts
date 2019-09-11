@@ -19,6 +19,11 @@ export * from './decorators';
 export { SchemaBuilder } from '@serafin/schema-builder';
 export const { emptySchema } = SchemaBuilder;
 
+export const integerString = <N extends boolean = false>(
+  schema?: ArgumentTypes<typeof SchemaBuilder.stringSchema>[0],
+  nullable?: N,
+) => SchemaBuilder.stringSchema<N>({ ...schema, pattern: '^\\d+$' }, nullable);
+
 type ArgumentTypes<T> = T extends (...args: infer U) => unknown ? U : never;
 type ReturnType<T> = T extends (...args: any) => infer R ? R : never;
 type ReplaceReturnType<T, R extends ReturnType<T>> = (...a: ArgumentTypes<T>) => R;
