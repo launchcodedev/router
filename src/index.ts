@@ -19,6 +19,8 @@ export * from './decorators';
 export { SchemaBuilder } from '@serafin/schema-builder';
 export const { emptySchema } = SchemaBuilder;
 
+export const nullSchema = SchemaBuilder.fromJsonSchema({ type: 'null' } as const);
+
 export const integerString = <N extends boolean = false>(
   schema?: ArgumentTypes<typeof SchemaBuilder.stringSchema>[0],
   nullable?: N,
