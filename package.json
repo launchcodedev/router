@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "yarn clean && tsc",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf dist *.tsbuildinfo",
     "prepublishOnly": "yarn build",
     "lint": "dev lint",
     "fix": "dev lint --fix",
