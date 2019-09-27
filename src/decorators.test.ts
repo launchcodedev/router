@@ -218,3 +218,14 @@ test('api field merging', () => {
     propertyC: true,
   });
 });
+
+test('lazy literal', () => {
+  class MyEntity {
+    @ApiField({ lazy: () => ({ bar: true }) })
+    propertyA = { foo: 1, bar: 2 };
+  }
+
+  expect(getApiFields(MyEntity)).toEqual({
+    propertyA: { bar: true },
+  });
+});

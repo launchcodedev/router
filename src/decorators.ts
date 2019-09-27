@@ -2,7 +2,9 @@
 import { merge } from 'lodash';
 import { Extraction } from '@servall/mapper';
 
-type PrivateApiFields = { [key: string]: true | (() => Function) };
+type PrivateApiFields = {
+  [key: string]: Extraction | (() => Function) | { lazy: () => Extraction };
+};
 
 const inject = (target: any, base = Object.getPrototypeOf(target)) => {
   target.__apiFields = {
@@ -13,7 +15,9 @@ const inject = (target: any, base = Object.getPrototypeOf(target)) => {
   return target;
 };
 
-export const ApiField = (fieldType?: Extraction | (() => Function | [Function])) =>
+export const ApiField = (
+  fieldType?: Extraction | (() => Function | [Function]) | { lazy: () => Extraction },
+) =>
   function ApiFieldDecorator(klass: any, name: string) {
     const target = inject(klass.constructor);
 
@@ -28,6 +32,12 @@ export const ApiField = (fieldType?: Extraction | (() => Function | [Function]))
         } else {
           // @ApiField({ foo: true })
           if (typeof val !== 'function') {
+            // @ApiField({ lazy: () => getApiFields(OtherClass) })
+            if (typeof val === 'object' && 'lazy' in val && typeof val.lazy === 'function') {
+              extract[name] = val.lazy();
+              return;
+            }
+
             extract[name] = val;
             return;
           }
