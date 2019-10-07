@@ -22,7 +22,7 @@ export const { emptySchema } = SchemaBuilder;
 export const nullSchema = SchemaBuilder.fromJsonSchema({ type: 'null' } as const);
 
 export const integerString = <N extends boolean = false>(
-  schema?: ArgumentTypes<typeof SchemaBuilder.stringSchema>[0],
+  schema?: Omit<ArgumentTypes<typeof SchemaBuilder.stringSchema>[0], 'pattern'>,
   nullable?: N,
 ) => SchemaBuilder.stringSchema<N>({ ...schema, pattern: '^\\d+$' }, nullable);
 
