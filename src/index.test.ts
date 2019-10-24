@@ -1,6 +1,5 @@
 import { routerTest } from '@servall/router-testing';
 import { SchemaBuilder } from '@serafin/schema-builder';
-import * as bodyparser from 'koa-bodyparser';
 import { dir as tempDir } from 'tmp-promise';
 import { writeJson, outputFile, remove } from 'fs-extra';
 import { join } from 'path';
@@ -18,6 +17,7 @@ import {
   propagateErrors,
   propagateValues,
   addMeta,
+  bodyparser,
 } from './index';
 
 test('bindRouteActions', () => {

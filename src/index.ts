@@ -7,6 +7,7 @@ import * as YAML from 'js-yaml';
 import { join } from 'path';
 import * as stackTrace from 'stacktrace-parser';
 import * as resolveFrom from 'resolve-from';
+import * as bodyparser from 'koa-bodyparser';
 import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
 import { Extraction, extract } from '@servall/mapper';
 import { Json } from '@servall/ts';
@@ -16,6 +17,7 @@ import * as OpenAPI from '@serafin/open-api';
 
 export * from './decorators';
 
+export { bodyparser };
 export { SchemaBuilder } from '@serafin/schema-builder';
 export const { emptySchema } = SchemaBuilder;
 
