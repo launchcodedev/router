@@ -555,7 +555,7 @@
     koa "2"
     supertest "3"
 
-"@servall/router@link:./.":
+"@servall/router@link:.":
   version "0.0.0"
   uid ""
 
