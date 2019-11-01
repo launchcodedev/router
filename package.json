@@ -14,12 +14,12 @@
     "registry": "https://npm.servalldatasystems.com"
   },
   "scripts": {
-    "build": "yarn clean && tsc",
+    "build": "tsc -b",
     "clean": "rm -rf dist *.tsbuildinfo",
-    "prepublishOnly": "yarn build",
     "lint": "dev lint",
     "fix": "dev lint --fix",
-    "test": "jest"
+    "test": "jest",
+    "prepublishOnly": "yarn clean && yarn build"
   },
   "devDependencies": {
     "@commitlint/cli": "8",
