@@ -29,6 +29,8 @@ myServer.use(api.allowedMethods());
 
 Cool! But what about those files in `./routes`? Let's look at their expected structure.
 
+Below is a typescript file in the `routes` folder:
+
 ```typescript
 import {
   RouteFactory,
@@ -48,7 +50,7 @@ const factory: RouteFactory<Dependencies> = {
   },
 
   create(dependencies: Dependencies) {
-    // here, bindRouteActions is optional, but add `dependencies` to `this` of actions.
+    // here, bindRouteActions isn't required, but it adds `dependencies` as `this` for actions, which is useful
     return bindRouteActions(dependencies, [
       // here, route is optional (an object works), but it adds better type inference for later on
       route({
@@ -121,7 +123,7 @@ and `create` the router yourself with a mocked up database.
 
 ### Prefix
 Prefixes get applied to all actions in a router. That means `prefix: '/auth'` puts all your actions after
-that path prefix. You can forgo this and specify absolute paths if your actions if you want.
+that path prefix. You can forgo this and specify absolute paths in your actions if you want.
 
 ### Middleware
 You can declare middleware for a router, and/or per route. This allows flexibility and coverage.
@@ -193,6 +195,18 @@ What you need to know:
 - `@servall/router` exports `BaseError`, which is "a user visible error"
 - In development, you'll always see your error messages
 - In production, only errors that are BaseErrors propagate up (see `internalMessage` for full details)
+
+**Throwing errors**: it happens, you'll need a way to throw an error up when things go wrong.
+
+```typescript
+import { err } from '@servall/router';
+
+// is it okay for your API consumers to see this error?
+throw err(401, 'Your error message');
+
+// no? keep it private by throwing any other error type
+throw { status: 401, message: 'Your error message' };
+```
 
 You'll likely want to use `propagateErrors`, though it is, strictly speaking, optional.
 
