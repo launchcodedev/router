@@ -34,26 +34,31 @@ import {
   RouteFactory,
   RouteActionWithContext,
   HttpMethod,
+  route,
   bindRouteActions,
 } from '@servall/router';
 
 // we'll leave this blank for now
-interface Dependencies {}
+type Dependencies = {};
 
 const factory: RouteFactory<Dependencies> = {
   getDependencies() {
+    // here, we return whatever Dependencies is
     return {};
   },
 
   create(dependencies: Dependencies) {
+    // here, bindRouteActions is optional, but add `dependencies` to `this` of actions.
     return bindRouteActions(dependencies, [
-      {
+      // here, route is optional (an object works), but it adds better type inference for later on
+      route({
         path: '/hello-world',
         method: HttpMethod.GET,
-        async action(ctx, next) {
+        async action(ctx) {
+          // returning here is the same as setting `ctx.body`
           return { hello: 'world!' };
         },
-      },
+      }),
     ]);
   },
 };
@@ -67,36 +72,45 @@ you'd now have a successful `/hello-world` GET route.
 
 A few explanations:
 
-1. We export a RouteFactory to make testing and dependency injection easier
-1. We use `bindRouteActions` for type safety and contextual functions (dependencies are available on `this`)
-1. We define `Dependencies` so that you can be explicit about what other modules are used
+1. We export a RouteFactory to make the router side-effect free
+2. We define `Dependencies` so that you can be explicit about what other modules are used, usually this is a database connection or other integration
 
-So on to dependencies. We'll leave the imports and export out for brevity.
+So on to dependencies.
 
 ```typescript
-interface Dependencies {
+import {
+  RouteFactory,
+  RouteActionWithContext,
+  HttpMethod,
+  route,
+  bindRouteActions,
+} from '@servall/router';
+
+type Dependencies = {
+  // normally, you'd be a bit more concise and call this `kx` or `cx`
   databaseConnection: Postgres;
-}
+};
 
 const factory: RouteFactory<Dependencies> = {
   getDependencies() {
     return {
+      // we establish the database connection now - avoiding the need to unless actually using the router
       databaseConnection: getTheDefaultDatabaseConnection(),
     };
   },
 
   create(dependencies: Dependencies) {
     return bindRouteActions(dependencies, [
-      {
+      route({
         path: '/some-entity',
         method: HttpMethod.GET,
-        async action(ctx, next) {
+        async action(ctx) {
           // we now have access to `databaseConnection` through `this`!
 
           // and we can return whatever we want, which will end up as a json response!
           return this.databaseConnection.query('select * from some_entity');
         },
-      },
+      }),
     ]);
   },
 };
@@ -105,61 +119,16 @@ const factory: RouteFactory<Dependencies> = {
 The key here is, that `getDependencies` is solely a helper. For testing, you might forgo it entirely,
 and `create` the router yourself with a mocked up database.
 
-You're not limited to a raw object. You can define your own class like so:
-
-```typescript
-interface Dependencies {
-  db: DbConnection;
-};
-
-class DbRouter implements RouteFactory<Dependencies> {
-  prefix = '/db';
-
-  getDependencies() {
-    return {
-      db: { isConnected: true },
-    };
-  }
-
-  create(dependencies: Dependencies) {
-    return bindRouteActions(dependencies, [
-      {
-        path: '/status',
-        method: HttpMethod.GET,
-        action: DbRouter.dbStatus,
-      },
-    ]);
-  }
-
-  static async dbStatus(this: Dependencies, ctx: Context, next: Next) {
-    return {
-      connected: this.db.isConnected,
-    };
-  }
-}
-```
-
-You can always declare route actions outside of the create function, of course.
-
-```typescript
-const dbStatus: RouteActionWithContext<Dependencies> = async function(ctx, next) {
-  return {
-    connected: this.db.isConnected,
-  };
-};
-```
-
-You might opt to make a type alias in your routers for `RouteActionWithContext<Dependencies>` as `Action`.
-
 ### Prefix
 Prefixes get applied to all actions in a router. That means `prefix: '/auth'` puts all your actions after
-that path prefix. You can forgo this an specify absolute paths if your actions if you want.
+that path prefix. You can forgo this and specify absolute paths if your actions if you want.
 
 ### Middleware
 You can declare middleware for a router, and/or per route. This allows flexibility and coverage.
 
 ```typescript
 const factory: RouteFactory<Dependencies> = {
+  // your normal getDependencies and create functions
   getDependencies() { ... },
   create(dependencies: Dependencies) { ... },
 
@@ -176,47 +145,25 @@ The same interface is available per-action. Just specify `middleware: []` beside
 
 ### Schemas
 We support JSON Schema natively to validate incoming request bodies. Simply put a `schema` property next
-to you `action`.
+to your `action`.
 
 ```typescript
-{
+route({
   path: '/resource/:id',
   method: HttpMethod.POST,
-  schema: new JSONSchema({
-    properties: {
-      x: {
-        type: 'number',
-      },
-      y: {
-        type: 'number',
-      },
-    },
-  }),
-  async action(ctx) {
-    // ctx.request.body is valid at this point
+  // we give you @lcdev/schema-builder through the `emptySchema` export
+  // you can also using a json schema directly, using the `JSONSchema` export
+  schema: emptySchema()
+    .addNumber('x')
+    .addNumber('y'),
+  async action(_, body) {
+    // here, typescript will actually know the type of x and y!
+    const { x, y } = body;
   },
-}
+})
 ```
 
-You could alternatively use `JSONSchema.load('schemaName', 'directory')` to load a JSON file if it's large.
-
-We also support `yup` validation. Simply use the `YupSchema` class.
-
-```typescript
-{
-  path: '/resource/:id',
-  method: HttpMethod.POST,
-  schema: YupSchema.create(yup => yup.object().shape({
-    foo: yup.string().required(),
-    bar: yup.number(),
-  })),
-  async action(ctx) {
-    // ctx.request.body is valid at this point
-  },
-}
-```
-
-This does depend on having `koa-bodyparser` in your app.
+This does depend on having `bodyparser` middleware. We export `bodyparser`, for common use cases, from this module.
 
 ### Nesting
 The Servall router is usually used in mostly flat contexts, but you can easily nest your routers.
@@ -245,9 +192,9 @@ What you need to know:
 
 - `@servall/router` exports `BaseError`, which is "a user visible error"
 - In development, you'll always see your error messages
-- In production, only errors the are BaseErrors propagate up (see `internalMessage` for full details)
+- In production, only errors that are BaseErrors propagate up (see `internalMessage` for full details)
 
-You'll likely want to use `propagateErrors`, though it is strictly optional.
+You'll likely want to use `propagateErrors`, though it is, strictly speaking, optional.
 
 ```typescript
 import { propagateErrors } from '@servall/router';
@@ -269,16 +216,44 @@ This will catch normalized errors, and return them in our standard json body for
 }
 ```
 
+You're encouraged to add this middleware at the top of your app, as well as on every RouteFactory. Doing so
+per-factory will make testing those factories in isolation a lot easier.
+
+### Return Format
+In a similar way to errors, it's handy to have all of your routes return JSON in the same structured format.
+
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+Instead of doing this yourself, we have middleware to help. Again, this is optional but encouraged.
+
+```typescript
+import { propagateValues } from '@servall/router';
+
+myServer.use(propagateValues());
+```
+
+When this middleware is above your route actions, you don't need to do anything. JSON responses will be wrapped
+in the above format. This makes parsing your API responses a lot easier.
+
+By default, this supports a third "meta" property in return objects. We normally use this for pagination state.
+You can add data the `ctx.state.meta` or call `addMeta(ctx, { ... })` to fill this in in an action.
+
 ### Extracting Returns
 Taking an example route action:
+
 ```typescript
-{
+route({
   path: '/users',
   method: HttpMethod.GET,
-  async action(ctx, next) {
+  async action(ctx) {
     return myDatabase.select('* from user');
   },
-},
+}),
 ```
 
 You might prefer not to include the `password` field here (excuse the contrived example).
@@ -297,7 +272,7 @@ for nesting objects well, and with multiple branches in an action, requires dupl
 You might opt to use our `returning` field instead.
 
 ```typescript
-{
+route({
   path: '/users',
   method: HttpMethod.GET,
   returning: {
@@ -308,10 +283,10 @@ You might opt to use our `returning` field instead.
       authority: ['access'],
     }],
   },
-  async action(ctx, next) {
+  async action(ctx) {
     return myDatabase.select('* from user');
   },
-},
+}),
 ```
 
 You can think of this as the inverse of `schema`. Some examples of this:
@@ -363,10 +338,12 @@ This is pulled directly from the `@servall/mapper` package, you can read more th
 You might want to reduce the duplication when extracting return values. Most of the time,
 you want to return the same fields for the same entities, records, etc.
 
-You can use our decorator for just that:
+Please see the [api-fields](https://gitlab.servalldatasystems.com/meat-n-potatoes/api-fields)
+package for that. It defines a decorator, called `@ApiField()`, which you can use to automatically
+fill in the `returning` field of a route action.
 
 ```typescript
-import { ApiField } from '@servall/router';
+import { ApiField } from '@servall/api-fields';
 
 class User extends BaseEntity {
   @ApiField()
@@ -377,6 +354,7 @@ class User extends BaseEntity {
   @ApiField()
   firstName: string;
 
+  // a closure means "get ApiFields for the Permission class"
   @ApiField(() => Permission)
   permission: Permission;
 
@@ -387,20 +365,19 @@ class User extends BaseEntity {
 In your route action, simply:
 
 ```typescript
-import { getApiFields } from '@servall/router';
+import { getApiFields } from '@servall/api-fields';
 
-{
+route({
   path: '/users/:id',
   method: HttpMethod.GET,
+  // getApiFields returns an object with the same format that `returning` expects
   returning: getApiFields(User),
-  async action(ctx, next) {
+  async action(ctx) {
     return myDatabase.select('from user where id = $0', id);
   },
-},
+}),
 ```
 
-Possibilities:
-- `@ApiField() property` means take all of `property`
-- `@ApiField(() => PropertyType) property` means take ApiFields of `property`
-- `@ApiField(() => [PropertyType]) property[]` means take ApiFields of all `property`s
-- `@ApiField({ ... }) property` means take `{ ... }` from `property`
+### Open API
+There is early support for generating API documentation from your routers. Check out the `createOpenAPI` function
+for more about this. For now, we encourage you to use Insomnia for testing of APIs.
