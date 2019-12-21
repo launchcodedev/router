@@ -1,5 +1,5 @@
-# Servall Router
-This is our main `@servall/router` node package, for centralizing the logic that
+# Launchcode Router
+This is our main `@lcdev/router` node package, for centralizing the logic that
 all of our backend applications share. It's designed for usage in koa servers.
 
 It's built fairly simply, with a couple core ideas:
@@ -15,7 +15,7 @@ So how do you use it?
 
 ```typescript
 import { join } from 'path';
-import { createRouter } from '@servall/router';
+import { createRouter } from '@lcdev/router';
 
 // here, we have a folder (./routes) that contains many Routers
 // `api` here conglomerates all of them into one single koa-router
@@ -38,7 +38,7 @@ import {
   HttpMethod,
   route,
   bindRouteActions,
-} from '@servall/router';
+} from '@lcdev/router';
 
 // we'll leave this blank for now
 type Dependencies = {};
@@ -86,7 +86,7 @@ import {
   HttpMethod,
   route,
   bindRouteActions,
-} from '@servall/router';
+} from '@lcdev/router';
 
 type Dependencies = {
   // normally, you'd be a bit more concise and call this `kx` or `cx`
@@ -168,13 +168,13 @@ route({
 This does depend on having `bodyparser` middleware. We export `bodyparser`, for common use cases, from this module.
 
 ### Nesting
-The Servall router is usually used in mostly flat contexts, but you can easily nest your routers.
+The lcdev router is usually used in mostly flat contexts, but you can easily nest your routers.
 
 ```typescript
 import {
   RouteFactory,
   findRoutes,
-} from '@servall/router';
+} from '@lcdev/router';
 
 const factory: RouteFactory<Dependencies> = {
   prefix: '/support',
@@ -188,18 +188,18 @@ const factory: RouteFactory<Dependencies> = {
 The example above nests routes found in the `./support` folder.
 
 ### Errors
-The Servall router normalizes errors that come from your actions. This pairs nicely with `@servall/logger`.
+The lcdev router normalizes errors that come from your actions. This pairs nicely with `@lcdev/logger`.
 
 What you need to know:
 
-- `@servall/router` exports `BaseError`, which is "a user visible error"
+- `@lcdev/router` exports `BaseError`, which is "a user visible error"
 - In development, you'll always see your error messages
 - In production, only errors that are BaseErrors propagate up (see `internalMessage` for full details)
 
 **Throwing errors**: it happens, you'll need a way to throw an error up when things go wrong.
 
 ```typescript
-import { err } from '@servall/router';
+import { err } from '@lcdev/router';
 
 // is it okay for your API consumers to see this error?
 throw err(401, 'Your error message');
@@ -211,7 +211,7 @@ throw { status: 401, message: 'Your error message' };
 You'll likely want to use `propagateErrors`, though it is, strictly speaking, optional.
 
 ```typescript
-import { propagateErrors } from '@servall/router';
+import { propagateErrors } from '@lcdev/router';
 
 // try to keep this as high as you can in your middleware stack
 myServer.use(propagateErrors());
@@ -246,7 +246,7 @@ In a similar way to errors, it's handy to have all of your routes return JSON in
 Instead of doing this yourself, we have middleware to help. Again, this is optional but encouraged.
 
 ```typescript
-import { propagateValues } from '@servall/router';
+import { propagateValues } from '@lcdev/router';
 
 myServer.use(propagateValues());
 ```
@@ -346,7 +346,7 @@ Note a couple things:
 
 Mismatching types, like an array selector when the return is an object, are ignored.
 
-This is pulled directly from the `@servall/mapper` package, you can read more there.
+This is pulled directly from the `@lcdev/mapper` package, you can read more there.
 
 ### API Fields
 You might want to reduce the duplication when extracting return values. Most of the time,
@@ -357,7 +357,7 @@ package for that. It defines a decorator, called `@ApiField()`, which you can us
 fill in the `returning` field of a route action.
 
 ```typescript
-import { ApiField } from '@servall/api-fields';
+import { ApiField } from '@lcdev/api-fields';
 
 class User extends BaseEntity {
   @ApiField()
@@ -379,7 +379,7 @@ class User extends BaseEntity {
 In your route action, simply:
 
 ```typescript
-import { getApiFields } from '@servall/api-fields';
+import { getApiFields } from '@lcdev/api-fields';
 
 route({
   path: '/users/:id',
