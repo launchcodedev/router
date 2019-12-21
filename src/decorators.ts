@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 import { merge } from 'lodash';
-import { Extraction } from '@servall/mapper';
+import { Extraction } from '@lcdev/mapper';
 
 type PrivateApiFields = {
   [key: string]: Extraction | (() => Function) | { lazy: () => Extraction };
@@ -81,5 +81,5 @@ export const getApiFields = (
     }
   }
 
-  return merge(fields, and || {});
+  return merge(fields, and ?? {});
 };

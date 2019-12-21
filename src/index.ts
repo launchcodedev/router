@@ -9,8 +9,8 @@ import * as stackTrace from 'stacktrace-parser';
 import * as resolveFrom from 'resolve-from';
 import * as bodyparser from 'koa-bodyparser';
 import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
-import { Extraction, extract } from '@servall/mapper';
-import { Json } from '@servall/ts';
+import { Extraction, extract } from '@lcdev/mapper';
+import { Json } from '@lcdev/ts';
 // this module actually has no js, so eslint fails to resolve it
 // eslint-disable-next-line import/no-unresolved
 import * as OpenAPI from '@serafin/open-api';
@@ -265,29 +265,26 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
 
   type FlatRoute = (Route | MadeRoute) & { path: string };
 
-  const flatRoutes = routes.reduce(
-    (routes, route) => {
-      if (Array.isArray(route.path)) {
-        return routes.concat(
-          route.path.map(path => ({
-            ...route,
-            path,
-          })),
-        );
-      }
+  const flatRoutes = routes.reduce((routes, route) => {
+    if (Array.isArray(route.path)) {
+      return routes.concat(
+        route.path.map(path => ({
+          ...route,
+          path,
+        })),
+      );
+    }
 
-      return routes.concat(route as FlatRoute);
-    },
-    [] as FlatRoute[],
-  );
+    return routes.concat(route as FlatRoute);
+  }, [] as FlatRoute[]);
 
   return flatRoutes.map(route => ({
     ...route,
     // add the prefix of the router to each Route
-    path: join(factory.prefix || '', route.path),
-    middleware: route.middleware || [],
+    path: join(factory.prefix ?? '', route.path),
+    middleware: route.middleware ?? [],
     routerMiddleware: [
-      ...(routerMiddleware || []),
+      ...(routerMiddleware ?? []),
       ...((route as MadeRoute).routerMiddleware || []),
     ],
   }));
@@ -307,10 +304,10 @@ export const createAllRoutes = async (factories: RouteFactory<any>[]) => {
 
 export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
   (await fs.readdir(dir))
-    .filter(n => n.match(/\.(j|t)sx?$/))
-    .filter(n => !n.match(/\.d\.ts$/))
-    .filter(n => !n.match(/\.test\..*$/))
-    .filter(n => !n.match(/^index\./))
+    .filter(n => /\.(j|t)sx?$/.exec(n))
+    .filter(n => !/\.d\.ts$/.exec(n))
+    .filter(n => !/\.test\..*$/.exec(n))
+    .filter(n => !/^index\./.exec(n))
     .map(filename => {
       const {
         default: factory,
@@ -322,7 +319,7 @@ export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
 
       // we account for 'export default class implements RouteFactory' here by calling `new`
       if (!factory.create) {
-        const FactoryClass = (factory as any) as (new () => RouteFactory<any>);
+        const FactoryClass = (factory as any) as new () => RouteFactory<any>;
         return new FactoryClass();
       }
 
@@ -464,7 +461,7 @@ export const createOpenAPI = (
     paths,
     openapi: '3.0.0',
     info: meta.info,
-    servers: meta.servers || [],
+    servers: meta.servers ?? [],
   };
 
   for (const route of routes) {

@@ -1,5 +1,5 @@
 {
-  "extends": "@servall/tsconfig",
+  "extends": "@lcdev/tsconfig",
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist"

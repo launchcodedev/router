@@ -1,17 +1,14 @@
 {
-  "name": "@servall/router",
-  "version": "1.1.6-dev",
-  "description": "Common koa routing for Servall",
+  "name": "@lcdev/router",
+  "version": "1.1.6",
+  "description": "Common structure for koa routing",
+  "license": "UNLICENSED",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": {
-    "name": "Servall Development",
-    "email": "admin@servalldev.com",
-    "url": "https://www.servalldev.com"
-  },
-  "license": "UNLICENSED",
-  "publishConfig": {
-    "registry": "https://npm.servalldatasystems.com"
+    "name": "Launchcode",
+    "email": "admin@lc.dev",
+    "url": "https://lc.dev"
   },
   "scripts": {
     "build": "tsc -b",
@@ -23,29 +20,30 @@
   },
   "devDependencies": {
     "@commitlint/cli": "8",
-    "@servall/commitlint": "1",
-    "@servall/dev": "0.0.10-beta.13",
-    "@servall/eslint-config": "0.1",
-    "@servall/jest": "0.1",
-    "@servall/prettier": "0.1",
-    "@servall/router": "1",
-    "@servall/router-testing": "1",
-    "@servall/tsconfig": "0.1",
+    "@lcdev/commitlint": "1",
+    "@lcdev/eslint-config": "0.2",
+    "@lcdev/jest": "0.1",
+    "@lcdev/prettier": "0.1",
+    "@lcdev/router-testing": "file:../router-testing",
+    "@lcdev/tsconfig": "0.1",
+    "@servall/dev": "0.0.17-eslintupgraded",
     "@types/fs-extra": "8",
     "@types/jest": "24",
     "@types/js-yaml": "3",
     "@types/lodash": "4",
     "@types/tmp": "0.0.33",
+    "eslint": "6",
     "husky": "3",
     "jest": "24",
+    "prettier": "1",
     "tmp-promise": "1",
     "typescript": "3"
   },
   "dependencies": {
+    "@lcdev/mapper": "0.1",
+    "@lcdev/ts": "0.2",
     "@serafin/open-api": "3",
     "@serafin/schema-builder": "0.9",
-    "@servall/mapper": "0.1",
-    "@servall/ts": "0.2",
     "@types/koa": "2",
     "@types/koa-bodyparser": "4",
     "@types/koa-router": "7",
@@ -61,12 +59,12 @@
     "stacktrace-parser": "0.1",
     "yup": "0.26"
   },
-  "prettier": "@servall/prettier",
+  "prettier": "@lcdev/prettier",
   "eslintConfig": {
-    "extends": "@servall"
+    "extends": "@lcdev"
   },
   "jest": {
-    "preset": "@servall/jest"
+    "preset": "@lcdev/jest"
   },
   "husky": {
     "hooks": {
@@ -75,7 +73,7 @@
   },
   "commitlint": {
     "extends": [
-      "@servall/commitlint"
+      "@lcdev/commitlint"
     ]
   }
 }
