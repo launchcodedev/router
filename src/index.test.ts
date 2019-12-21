@@ -227,7 +227,7 @@ test('readme class example', async () => {
     }
   }
 
-  await routerTest(new DbRouter(), await new DbRouter().getDependencies(), async test => {
+  await routerTest(new DbRouter(), new DbRouter().getDependencies(), async test => {
     await test.get('/db/status').expect({ connected: true });
 
     await test.post('/db/disconnect').expect(204);
