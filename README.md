@@ -11,6 +11,14 @@ It's built fairly simply, with a couple core ideas:
 To help development remain consistent, we've made a package for encapsulating that logic.
 This is not a web server, it's not a resource manager, it's not an API structure; just a tool.
 
+### Quick Start
+[![](https://shields.servallapps.com/npm/v/@lcdev/router.svg?registry_uri=https%3A%2F%2Fnpm.servalldatasystems.com)](https://npm.servalldatasystems.com/#/detail/@lcdev/router)
+
+```bash
+# replace VERSION below with the most recent major version above (eg. 0.5.1 -> 0.5, 1.2.3 -> 1)
+yarn add @lcdev/router@VERSION
+```
+
 So how do you use it?
 
 ```typescript
