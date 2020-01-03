@@ -37,6 +37,7 @@
     "husky": "3",
     "jest": "24",
     "prettier": "1",
+    "supertest": "3",
     "tmp-promise": "1",
     "typescript": "3"
   },
