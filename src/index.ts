@@ -18,6 +18,7 @@ import * as OpenAPI from '@serafin/open-api';
 export * from './decorators';
 
 export { bodyparser };
+export { Router };
 export { SchemaBuilder } from '@serafin/schema-builder';
 export const { emptySchema } = SchemaBuilder;
 
@@ -192,11 +193,16 @@ export interface RouteWithContext<Ctx> {
 export type Route = RouteWithContext<any>;
 
 type MadeRoute = Route & {
-  routerMiddleware: Middleware[];
+  routerMiddleware?: Middleware[];
 };
 
+/** @deprecated use `route` instead */
 export const routeWithBody = route;
 
+/**
+ * Constructs a type safe route action, useable in {@link RouteFactory#create}. Is better than plain
+ * objects because it enables you to infer the body and query types.
+ */
 export function route<Ctx, Body = never, Query = never>(
   route: Omit<RouteWithContext<Ctx>, 'action' | 'schema' | 'querySchema'> & {
     schema?: SchemaBuilder<Body> | JSONSchema<Body>;
@@ -228,6 +234,17 @@ export function route<Ctx, Body = never, Query = never>(
   };
 }
 
+/**
+ * Helper to create a router that nests all factories in a prefix. Is easily done manually using
+ * `nested` property of a factory.
+ *
+ * Typical use:
+ *
+ * ```
+ * const api = nestedRouter(join(__dirname, 'routes'), '/api');
+ * const router = await createRouterFactories([api]);
+ * ```
+ */
 export const nestedRouter = (dirname: string, prefix?: string): RouteFactory<void> => {
   return {
     prefix,
@@ -240,6 +257,9 @@ export const nestedRouter = (dirname: string, prefix?: string): RouteFactory<voi
   };
 };
 
+/**
+ * Binds a `this` context to all routes given, typically used in a {@link RouteFactory#create} function.
+ */
 export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]): Route[] => {
   return routes.map(route => ({
     ...route,
@@ -247,7 +267,10 @@ export const bindRouteActions = <Ctx>(c: Ctx, routes: RouteWithContext<Ctx>[]): 
   }));
 };
 
-export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
+/**
+ * Consumes one route factory and produces the routes that it creates.
+ */
+export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D): Promise<MadeRoute[]> => {
   const routes: (Route | MadeRoute)[] = await factory.create(deps);
 
   let routerMiddleware: Middleware[] | undefined;
@@ -285,12 +308,15 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D) => {
     middleware: route.middleware ?? [],
     routerMiddleware: [
       ...(routerMiddleware ?? []),
-      ...((route as MadeRoute).routerMiddleware || []),
+      ...((route as MadeRoute).routerMiddleware ?? []),
     ],
   }));
 };
 
-export const createAllRoutes = async (factories: RouteFactory<any>[]) => {
+/**
+ * Consumes route factories and produces the routes that they create, using default `getDependencies`.
+ */
+export const createAllRoutes = async (factories: RouteFactory<any>[]): Promise<MadeRoute[]> => {
   // inject dependencies
   const routerRoutes = await Promise.all(
     factories.map(async factory => {
@@ -302,6 +328,9 @@ export const createAllRoutes = async (factories: RouteFactory<any>[]) => {
   return routerRoutes.reduce<MadeRoute[]>((acc, routes) => acc.concat(routes), []);
 };
 
+/**
+ * Helper for loading all modules in a folder as plain RouteFactories (does not instantiate them).
+ */
 export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
   (await fs.readdir(dir))
     .filter(n => /\.(j|t)sx?$/.exec(n))
@@ -326,7 +355,11 @@ export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
       return factory;
     });
 
-export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
+/**
+ * Creates a full Router out of all routes formed by router factories.
+ * Is usually not used externally - you'd rather use {@link createRouterFactories} or {@link createRouter}.
+ */
+export const createRouterRaw = async (routes: MadeRoute[], debug = false): Promise<Router> => {
   const router = new Router();
 
   if (debug) {
@@ -335,16 +368,7 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
 
   // Call router.get(), router.post(), router.put(), etc, to set up routes
   routes.forEach(route => {
-    const {
-      path,
-      action,
-      method,
-      schema,
-      querySchema,
-      returning,
-      middleware = [],
-      routerMiddleware = [],
-    } = route;
+    const { path, method } = route;
 
     const methods = Array.isArray(method) ? method : [method];
 
@@ -352,105 +376,34 @@ export const createRouterRaw = async (routes: MadeRoute[], debug = false) => {
       console.log(`\t[${methods.map(m => m.toUpperCase()).join(', ')}] ${path}`);
     }
 
-    methods.forEach(method => {
-      // access the router.get function dynamically from HttpMethod strings
-      const bindFn = router[method].bind(router);
-
-      // router-level middleware comes before schema, action-level middleware comes after
-      bindFn(path, ...routerMiddleware);
-
-      if (schema) {
-        bindFn(path, async (ctx, next) => {
-          const { body } = ctx.request as any;
-
-          if (body === undefined) {
-            throw new BaseError('a request body is required', 400);
-          }
-
-          const result = await schema.validate(body);
-
-          if (result !== true) {
-            throw result;
-          }
-
-          await next();
-        });
-      }
-
-      if (querySchema) {
-        bindFn(path, async (ctx, next) => {
-          const { query } = ctx.request;
-
-          const result = await querySchema.validate(query);
-
-          if (result !== true) {
-            throw result;
-          }
-
-          await next();
-        });
-      }
-
-      bindFn(path, ...middleware);
-
-      bindFn(path, async (ctx, next) => {
-        try {
-          const response = await action(ctx, next);
-
-          if (response || ctx.status === 204) {
-            if (ctx.body) {
-              console.warn('overwriting ctx.body, which was set in a route handler');
-            }
-
-            if (returning) {
-              ctx.body = extract(response, returning);
-            } else {
-              ctx.body = response || '';
-            }
-          } else if (response === undefined && ctx.body === undefined) {
-            throw {
-              status: 500,
-              message:
-                `You did not return anything in the route '${path}'.` +
-                "If this was on purpose, please return 'false'",
-            };
-          } else if (!ctx.body) {
-            ctx.status = 204;
-          }
-        } catch (error) {
-          if (typeof error === 'string') {
-            error = new Error(error);
-          }
-
-          error.code = error.code || -1;
-          error.status = error.status || error.statusCode || 500;
-          error.internalMessage = error.message;
-          error.stackTrace = error.stack && stackTrace.parse(error.stack);
-
-          // don't reveal internal message unless you've opted-in by extending BaseError
-          if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
-            error.message = 'Internal server error (see logs)';
-          }
-
-          throw error;
-        }
-      });
-    });
+    addRouteToRouter(route, router);
   });
 
   return router;
 };
 
-export const createRouterFactories = async (factories: RouteFactory<any>[], debug = false) => {
+/**
+ * Creates a full Router out of all RouterFactory modules (see {@link createRouter} to automatically load a folder).
+ */
+export const createRouterFactories = async (
+  factories: RouteFactory<any>[],
+  debug = false,
+): Promise<Router> => {
   const routes = await createAllRoutes(factories);
   return createRouterRaw(routes, debug);
 };
 
-export const createRouter = async (dir: string, debug = false) => {
+/**
+ * Creates a full Router out of all RouterFactory modules in a folder.
+ */
+export const createRouter = async (dir: string, debug = false): Promise<Router> => {
   const routes = await createAllRoutes(await findRouters(dir));
   return createRouterRaw(routes, debug);
 };
 
+/**
+ * Generates an OpenAPI spec for your router(s).
+ */
 export const createOpenAPI = (
   routes: MadeRoute[],
   meta: { info: OpenAPI.InfoObject; servers?: OpenAPI.ServerObject[] },
@@ -492,18 +445,6 @@ export const createOpenAPI = (
   }
 
   return openAPI;
-};
-
-const filterInternalMessages = (
-  status: number,
-  errorMessage: string,
-  includeInternalErrors: boolean,
-) => {
-  if (status >= 500 && !includeInternalErrors) {
-    return 'Internal server error (see logs)';
-  }
-
-  return errorMessage;
 };
 
 /**
@@ -587,3 +528,147 @@ export const addMeta = (ctx: Context, properties: { [key: string]: any }) => {
   if (!ctx.state.meta) ctx.state.meta = {};
   Object.assign(ctx.state.meta, properties);
 };
+
+/**
+ * Binds a route definition to a koa router. Can be used with a route directly,
+ * or (more usefully) can be used with a MadeRoute from {@link createRoutes} / {@link createAllRoutes}.
+ *
+ * This function can be useful for incremental adoption, enabling you to
+ * do something like this:
+ *
+ * ```
+ * import * as Koa from 'koa';
+ * import * as Router from 'koa-router';
+ *
+ * const app = new Koa();
+ * const router = new Router();
+ *
+ * addRouteToRouter(
+ *   route({
+ *     path: '/my-route',
+ *     method: HttpMethod.GET,
+ *     returning: {
+ *       foo: true,
+ *     },
+ *     async action() {
+ *       return {
+ *         foo: 'bar',
+ *         bar: 'baz',
+ *       };
+ *     },
+ *   }),
+ *   router,
+ * );
+ * ```
+ */
+export const addRouteToRouter = (route: MadeRoute, router: Router) => {
+  const {
+    path,
+    action,
+    method,
+    schema,
+    querySchema,
+    returning,
+    middleware = [],
+    routerMiddleware = [],
+  } = route;
+
+  const methods = Array.isArray(method) ? method : [method];
+
+  methods.forEach(method => {
+    // access the router.get function dynamically from HttpMethod strings
+    const bindFn = router[method].bind(router);
+
+    // router-level middleware comes before schema, action-level middleware comes after
+    bindFn(path, ...routerMiddleware);
+
+    if (schema) {
+      bindFn(path, async (ctx, next) => {
+        const { body } = ctx.request as any;
+
+        if (body === undefined) {
+          throw new BaseError('a request body is required', 400);
+        }
+
+        const result = await schema.validate(body);
+
+        if (result !== true) {
+          throw result;
+        }
+
+        await next();
+      });
+    }
+
+    if (querySchema) {
+      bindFn(path, async (ctx, next) => {
+        const { query } = ctx.request;
+
+        const result = await querySchema.validate(query);
+
+        if (result !== true) {
+          throw result;
+        }
+
+        await next();
+      });
+    }
+
+    bindFn(path, ...middleware);
+
+    bindFn(path, async (ctx, next) => {
+      try {
+        const response = await action(ctx, next);
+
+        if (response || ctx.status === 204) {
+          if (ctx.body) {
+            console.warn('overwriting ctx.body, which was set in a route handler');
+          }
+
+          if (returning) {
+            ctx.body = extract(response, returning);
+          } else {
+            ctx.body = response || '';
+          }
+        } else if (response === undefined && ctx.body === undefined) {
+          throw {
+            status: 500,
+            message:
+              `You did not return anything in the route '${path}'.` +
+              "If this was on purpose, please return 'false'",
+          };
+        } else if (!ctx.body) {
+          ctx.status = 204;
+        }
+      } catch (error) {
+        if (typeof error === 'string') {
+          error = new Error(error);
+        }
+
+        error.code = error.code || -1;
+        error.status = error.status || error.statusCode || 500;
+        error.internalMessage = error.message;
+        error.stackTrace = error.stack && stackTrace.parse(error.stack);
+
+        // don't reveal internal message unless you've opted-in by extending BaseError
+        if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
+          error.message = 'Internal server error (see logs)';
+        }
+
+        throw error;
+      }
+    });
+  });
+};
+
+function filterInternalMessages(
+  status: number,
+  errorMessage: string,
+  includeInternalErrors: boolean,
+) {
+  if (status >= 500 && !includeInternalErrors) {
+    return 'Internal server error (see logs)';
+  }
+
+  return errorMessage;
+}

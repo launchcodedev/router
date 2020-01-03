@@ -1,5 +1,8 @@
 import { routerTest } from '@lcdev/router-testing';
 import { SchemaBuilder } from '@serafin/schema-builder';
+import * as Koa from 'koa';
+import { createServer } from 'http';
+import { agent } from 'supertest';
 import { dir as tempDir } from 'tmp-promise';
 import { writeJson, outputFile, remove } from 'fs-extra';
 import { join } from 'path';
@@ -7,12 +10,15 @@ import {
   RouteFactory,
   RouteActionWithContext,
   HttpMethod,
+  Router,
   JSONSchema,
   YupSchema,
   err,
+  route,
   routeWithBody,
   bindRouteActions,
   createAllRoutes,
+  addRouteToRouter,
   createOpenAPI,
   propagateErrors,
   propagateValues,
@@ -1301,4 +1307,38 @@ test('propagate values', async () => {
       },
     });
   });
+});
+
+test('addRouteToRouter', async () => {
+  const app = new Koa();
+  const router = new Router();
+
+  addRouteToRouter(
+    route({
+      path: '/my-route',
+      method: HttpMethod.GET,
+      returning: {
+        foo: true,
+      },
+      async action() {
+        return {
+          foo: 'bar',
+          bar: 'baz',
+        };
+      },
+    }),
+    router,
+  );
+
+  app.use(router.routes()).use(router.allowedMethods());
+
+  const server = createServer(app.callback());
+  const test = agent(server);
+
+  await test
+    .get('/my-route')
+    .expect(200)
+    .expect({ foo: 'bar' });
+
+  server.close();
 });
