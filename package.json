@@ -67,6 +67,7 @@
     "koa-bodyparser": "4",
     "koa-router": "7",
     "lodash": "4",
+    "path-to-regexp": "6",
     "resolve-from": "5",
     "stacktrace-parser": "0.1",
     "yup": "0.26"

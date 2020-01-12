@@ -8,6 +8,7 @@ import { join } from 'path';
 import * as stackTrace from 'stacktrace-parser';
 import * as resolveFrom from 'resolve-from';
 import * as bodyparser from 'koa-bodyparser';
+import { parse as parsePathString } from 'path-to-regexp';
 import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
 import { Extraction, extract } from '@lcdev/mapper';
 import { Json } from '@lcdev/ts';
@@ -452,10 +453,37 @@ export const createOpenAPI = (
     }
 
     for (const p of Array.isArray(path) ? path : [path]) {
-      paths[p] = paths[p] || {};
+      const parsed = parsePathString(p);
+      const paramsPath = parsed
+        .map(section => {
+          if (typeof section === 'string') return section;
+          return `${section.prefix}{${section.name}}${section.suffix}`;
+        })
+        .join('');
+
+      desc.parameters = parsed
+        .filter(s => typeof s !== 'string')
+        .map(param => {
+          if (typeof param === 'string') throw 'impossible';
+
+          let schema;
+
+          if (param.pattern === '\\d+') {
+            schema = { type: 'integer' } as const;
+          }
+
+          return {
+            in: 'path',
+            name: `${param.name}`,
+            required: param.modifier.includes('?'),
+            schema,
+          };
+        });
+
+      paths[paramsPath] = paths[paramsPath] || {};
 
       for (const m of Array.isArray(method) ? method : [method]) {
-        paths[p][m] = desc;
+        paths[paramsPath][m] = desc;
       }
     }
   }
