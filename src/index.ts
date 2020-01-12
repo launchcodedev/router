@@ -475,7 +475,7 @@ export const createOpenAPI = (
           return {
             in: 'path',
             name: `${param.name}`,
-            required: param.modifier.includes('?'),
+            required: !param.modifier.includes('?'),
             schema,
           };
         });

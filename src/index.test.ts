@@ -1103,6 +1103,11 @@ test('docs', async () => {
             return { foo: [{ bar: 22 }] };
           },
         },
+        {
+          path: '/foo/:bar(\\d+)',
+          method: HttpMethod.POST,
+          async action() {},
+        },
       ]);
     },
   };
@@ -1124,6 +1129,7 @@ test('docs', async () => {
     paths: {
       '/unnamed': {
         post: {
+          parameters: [],
           responses: {
             default: { description: 'Responses are unknown' },
           },
@@ -1148,6 +1154,7 @@ test('docs', async () => {
         post: {
           summary: 'Special',
           description: 'Does certain things',
+          parameters: [],
           responses: {
             200: { description: 'Success' },
           },
@@ -1162,6 +1169,23 @@ test('docs', async () => {
                 },
               },
             },
+          },
+        },
+      },
+      '/foo/{bar}': {
+        post: {
+          parameters: [
+            {
+              in: 'path',
+              name: 'bar',
+              required: true,
+              schema: {
+                type: 'integer',
+              },
+            },
+          ],
+          responses: {
+            default: { description: 'Responses are unknown' },
           },
         },
       },
