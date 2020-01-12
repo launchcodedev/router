@@ -1,10 +1,8 @@
-import { createOpenAPI, createAllRoutes, readRouterFile } from './index';
 import { Command, flags } from '@oclif/command';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as globby from 'globby';
-import * as Router from 'koa-router';
-import * as YAML from 'js-yaml';
+import { createOpenAPI, createAllRoutes, readRouterFile } from './index';
 
 class GenerateOpenapi extends Command {
   static description = 'Generates OpenAPI definitions from your routers';
@@ -31,10 +29,12 @@ class GenerateOpenapi extends Command {
 
     try {
       if (!title) {
+        // eslint-disable-next-line
         ({ name: title } = require(path.resolve('./package.json')));
       }
 
       if (!version) {
+        // eslint-disable-next-line
         ({ version } = require(path.resolve('./package.json')));
       }
     } catch {
@@ -55,6 +55,7 @@ class GenerateOpenapi extends Command {
     if (setup) {
       this.log(`Running setup: ${setup}`);
 
+      // eslint-disable-next-line
       const exported = require(path.resolve(setup));
 
       if (exported.default) {
@@ -66,7 +67,7 @@ class GenerateOpenapi extends Command {
     for (const inputFile of inputFiles) {
       this.log(`Loading ${inputFile}`);
 
-      const factory = await readRouterFile(path.resolve(inputFile));
+      const factory = readRouterFile(path.resolve(inputFile));
       factories.push(factory);
     }
 
@@ -74,10 +75,10 @@ class GenerateOpenapi extends Command {
     const routes = await createAllRoutes(factories);
 
     this.log('Generating OpenAPI spec from routers');
-    const openapi = await createOpenAPI(routes, {
+    const openapi = createOpenAPI(routes, {
       info: {
-        title: title || 'Unknown',
-        version: version || '0',
+        title: title ?? 'Unknown',
+        version: version ?? '0',
       },
     });
 
@@ -91,6 +92,7 @@ class GenerateOpenapi extends Command {
     await GenerateOpenapi.run();
     process.exit(0);
   } catch (err) {
+    // eslint-disable-next-line
     require('@oclif/errors/handle')(err);
   }
 })();
