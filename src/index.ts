@@ -348,23 +348,28 @@ export const findRouters = async (dir: string): Promise<RouteFactory<any>[]> =>
     .filter(n => !/\.d\.ts$/.exec(n))
     .filter(n => !/\.test\..*$/.exec(n))
     .filter(n => !/^index\./.exec(n))
-    .map(filename => {
-      const {
-        default: factory,
-      }: {
-        default: RouteFactory<any>;
-      } = require(join(dir, filename));
+    .map(filename => readRouterFile(join(dir, filename)));
 
-      if (!factory) throw new Error(`missing default export: ${join(dir, filename)}`);
+/**
+ * Helper for loading module from a file as plain RouteFactories (does not instantiate it).
+ */
+export const readRouterFile = (filename: string): RouteFactory<any> => {
+  const {
+    default: factory,
+  }: {
+    default: RouteFactory<any>;
+  } = require(filename);
 
-      // we account for 'export default class implements RouteFactory' here by calling `new`
-      if (!factory.create) {
-        const FactoryClass = (factory as any) as new () => RouteFactory<any>;
-        return new FactoryClass();
-      }
+  if (!factory) throw new Error(`missing default export: ${filename}`);
 
-      return factory;
-    });
+  // we account for 'export default class implements RouteFactory' here by calling `new`
+  if (!factory.create) {
+    const FactoryClass = (factory as any) as new () => RouteFactory<any>;
+    return new FactoryClass();
+  }
+
+  return factory;
+};
 
 /**
  * Creates a full Router out of all routes formed by router factories.
@@ -422,10 +427,10 @@ export const createOpenAPI = (
   const paths: OpenAPI.PathObject = {};
 
   const openAPI: OpenAPI.OpenAPIObject = {
-    paths,
     openapi: '3.0.0',
     info: meta.info,
     servers: meta.servers ?? [],
+    paths,
   };
 
   for (const route of routes) {

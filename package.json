@@ -10,6 +10,12 @@
     "email": "admin@lc.dev",
     "url": "https://lc.dev"
   },
+  "bin": {
+    "router-openapi-gen": "./dist/generate-openapi.js"
+  },
+  "files": [
+    "*"
+  ],
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist *.tsbuildinfo",
@@ -44,6 +50,9 @@
     "@lcdev/api-fields": "0.1",
     "@lcdev/mapper": "0.1",
     "@lcdev/ts": "0.2",
+    "@oclif/command": "1",
+    "@oclif/config": "1",
+    "@oclif/plugin-help": "2",
     "@serafin/open-api": "3",
     "@serafin/schema-builder": "0.9",
     "@types/koa": "2",
@@ -52,6 +61,7 @@
     "@types/yup": "0.26",
     "ajv": "6",
     "fs-extra": "8",
+    "globby": "11",
     "js-yaml": "3",
     "koa": "2",
     "koa-bodyparser": "4",
