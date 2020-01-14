@@ -42,6 +42,7 @@
     "typescript": "3"
   },
   "dependencies": {
+    "@lcdev/api-fields": "0.1",
     "@lcdev/mapper": "0.1",
     "@lcdev/ts": "0.2",
     "@serafin/open-api": "3",

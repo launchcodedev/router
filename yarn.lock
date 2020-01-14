@@ -443,6 +443,14 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
+"@lcdev/api-fields@0.1":
+  version "0.1.1"
+  resolved "https://npm.servalldatasystems.com/@lcdev%2fapi-fields/-/api-fields-0.1.1.tgz#a07357641869fcf23a33bc774e66209e3f65d92a"
+  integrity sha512-ywXQxyj9GIEzWFx/3hGDiU95t2TF4ISL8DH3tcvlSbHq2rAyNDiFSo0GSv1lkTvN80LWH7MmyB23ruZJ8UmBJw==
+  dependencies:
+    "@lcdev/mapper" "0.1"
+    lodash "4"
+
 "@lcdev/cli@0.2":
   version "0.2.1"
   resolved "https://npm.servalldatasystems.com/@lcdev%2fcli/-/cli-0.2.1.tgz#f7060f8d919d351b55e08cafbf646a5922d9f199"

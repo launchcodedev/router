@@ -15,7 +15,7 @@ import { Json } from '@lcdev/ts';
 // eslint-disable-next-line import/no-unresolved
 import * as OpenAPI from '@serafin/open-api';
 
-export * from './decorators';
+export * from '@lcdev/api-fields';
 
 export { bodyparser };
 export { Router };
