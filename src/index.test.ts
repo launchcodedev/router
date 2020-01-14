@@ -24,6 +24,8 @@ import {
   propagateValues,
   addMeta,
   bodyparser,
+  ApiField,
+  getApiFields,
 } from './index';
 
 test('bindRouteActions', () => {
@@ -1056,6 +1058,11 @@ test('typed route', async () => {
 test('docs', async () => {
   type Dependencies = {};
 
+  class Foo {
+    @ApiField()
+    bar: string = 'bar';
+  }
+
   const factory: RouteFactory<Dependencies> = {
     getDependencies() {
       return {};
@@ -1108,6 +1115,22 @@ test('docs', async () => {
           method: HttpMethod.POST,
           async action() {},
         },
+        route({
+          path: '/return-schema',
+          method: HttpMethod.POST,
+          returning: getApiFields(Foo),
+          async action(_, body) {
+            return new Foo();
+          },
+        }),
+        route({
+          path: '/return-schema-arr',
+          method: HttpMethod.POST,
+          returning: [getApiFields(Foo)],
+          async action(_, body) {
+            return [new Foo()];
+          },
+        }),
       ]);
     },
   };
@@ -1131,7 +1154,14 @@ test('docs', async () => {
         post: {
           parameters: [],
           responses: {
-            default: { description: 'Responses are unknown' },
+            default: {
+              description: 'No description found',
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {},
+              },
+            },
           },
           requestBody: {
             content: {
@@ -1157,6 +1187,13 @@ test('docs', async () => {
           parameters: [],
           responses: {
             200: { description: 'Success' },
+            default: {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {},
+              },
+            },
           },
           requestBody: {
             content: {
@@ -1185,7 +1222,44 @@ test('docs', async () => {
             },
           ],
           responses: {
-            default: { description: 'Responses are unknown' },
+            default: { description: 'No description found' },
+          },
+        },
+      },
+      '/return-schema': {
+        post: {
+          parameters: [],
+          responses: {
+            default: {
+              description: 'No description found',
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  bar: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/return-schema-arr': {
+        post: {
+          parameters: [],
+          responses: {
+            default: {
+              description: 'No description found',
+              schema: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    bar: { type: 'string' },
+                  },
+                },
+              },
+            },
           },
         },
       },

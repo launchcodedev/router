@@ -5,6 +5,7 @@ import * as Ajv from 'ajv';
 import * as yup from 'yup';
 import * as YAML from 'js-yaml';
 import { join } from 'path';
+import { merge } from 'lodash';
 import * as stackTrace from 'stacktrace-parser';
 import * as resolveFrom from 'resolve-from';
 import * as bodyparser from 'koa-bodyparser';
@@ -12,6 +13,7 @@ import { parse as parsePathString } from 'path-to-regexp';
 import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
 import { Extraction, extract } from '@lcdev/mapper';
 import { Json } from '@lcdev/ts';
+import { extractJsonSchema } from '@lcdev/api-fields';
 // this module actually has no js, so eslint fails to resolve it
 // eslint-disable-next-line import/no-unresolved
 import * as OpenAPI from '@serafin/open-api';
@@ -435,12 +437,23 @@ export const createOpenAPI = (
   };
 
   for (const route of routes) {
-    // TODO: extract parameters from paths
-    const { docs, path, method, schema } = route;
+    const { docs, path, method, schema, returning } = route;
 
     const desc: OpenAPI.OperationObject = docs
       ? { ...docs }
-      : { responses: { default: { description: 'Responses are unknown' } } };
+      : { responses: { default: { description: 'No description found' } } };
+
+    if (returning) {
+      try {
+        const responseSchema = extractJsonSchema(returning, false);
+
+        desc.responses = merge(desc.responses, {
+          default: {
+            schema: responseSchema,
+          },
+        });
+      } catch {}
+    }
 
     if (schema instanceof JSONSchema) {
       desc.requestBody = {
