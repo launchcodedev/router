@@ -187,12 +187,13 @@ export interface RouteWithContext<Ctx> {
   querySchema?: Schema;
   returning?: Extraction;
   action: RouteActionWithContext<Ctx>;
-  middleware?: Middleware[];
+  middleware?: Middleware[] | (() => Middleware[]);
 }
 
 export type Route = RouteWithContext<any>;
 
 type MadeRoute = Route & {
+  middleware?: Middleware[];
   routerMiddleware?: Middleware[];
 };
 
@@ -301,16 +302,25 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D): Promis
     return routes.concat(route as FlatRoute);
   }, [] as FlatRoute[]);
 
-  return flatRoutes.map(route => ({
-    ...route,
-    // add the prefix of the router to each Route
-    path: join(factory.prefix ?? '', route.path),
-    middleware: route.middleware ?? [],
-    routerMiddleware: [
-      ...(routerMiddleware ?? []),
-      ...((route as MadeRoute).routerMiddleware ?? []),
-    ],
-  }));
+  return flatRoutes.map<MadeRoute>(route => {
+    const path = join(factory.prefix ?? '', route.path);
+    const middleware = route.middleware
+      ? typeof route.middleware === 'function'
+        ? route.middleware()
+        : route.middleware
+      : [];
+
+    return {
+      ...route,
+      // add the prefix of the router to each Route
+      path,
+      middleware,
+      routerMiddleware: [
+        ...(routerMiddleware ?? []),
+        ...((route as MadeRoute).routerMiddleware ?? []),
+      ],
+    };
+  });
 };
 
 /**
