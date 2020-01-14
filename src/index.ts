@@ -304,6 +304,7 @@ export const createRoutes = async <D>(factory: RouteFactory<D>, deps: D): Promis
 
   return flatRoutes.map<MadeRoute>(route => {
     const path = join(factory.prefix ?? '', route.path);
+    // eslint-disable-next-line
     const middleware = route.middleware
       ? typeof route.middleware === 'function'
         ? route.middleware()
@@ -571,17 +572,17 @@ export const addMeta = (ctx: Context, properties: { [key: string]: any }) => {
  * );
  * ```
  */
-export const addRouteToRouter = (route: MadeRoute, router: Router) => {
-  const {
-    path,
-    action,
-    method,
-    schema,
-    querySchema,
-    returning,
-    middleware = [],
-    routerMiddleware = [],
-  } = route;
+export const addRouteToRouter = (route: Route | MadeRoute, router: Router) => {
+  const { path, action, method, schema, querySchema, returning } = route;
+
+  // eslint-disable-next-line
+  const middleware = route.middleware
+    ? typeof route.middleware === 'function'
+      ? route.middleware()
+      : route.middleware
+    : [];
+
+  const routerMiddleware = 'routerMiddleware' in route ? route.routerMiddleware ?? [] : [];
 
   const methods = Array.isArray(method) ? method : [method];
 

@@ -1342,3 +1342,28 @@ test('addRouteToRouter', async () => {
 
   server.close();
 });
+
+test('lazy route middleware', async () => {
+  const factory: RouteFactory<{}> = {
+    getDependencies() {
+      return {};
+    },
+
+    create(dependencies: {}) {
+      return bindRouteActions(dependencies, [
+        {
+          path: '/test',
+          method: HttpMethod.GET,
+          middleware: () => [propagateErrors(true)],
+          async action() {
+            throw err(401, 'My err');
+          },
+        },
+      ]);
+    },
+  };
+
+  await routerTest(factory, {}, async test => {
+    await test.get('/test').expect({ success: false, code: -1, message: 'My err', data: null });
+  });
+});
