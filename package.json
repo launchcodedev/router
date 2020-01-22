@@ -13,8 +13,8 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist *.tsbuildinfo",
-    "lint": "dev lint",
-    "fix": "dev lint --fix",
+    "lint": "eslint --ext .ts,.tsx src",
+    "fix": "eslint --ext .ts,.tsx src --fix",
     "test": "jest",
     "prepublishOnly": "yarn clean && yarn build"
   },
@@ -27,7 +27,6 @@
     "@lcdev/router": "1",
     "@lcdev/router-testing": "1",
     "@lcdev/tsconfig": "0.1",
-    "@servall/dev": "0.0.17-eslintupgraded",
     "@types/fs-extra": "8",
     "@types/jest": "24",
     "@types/js-yaml": "3",
