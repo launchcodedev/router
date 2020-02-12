@@ -1119,7 +1119,7 @@ test('docs', async () => {
           path: '/return-schema',
           method: HttpMethod.POST,
           returning: getApiFields(Foo),
-          async action(_, body) {
+          async action(_) {
             return new Foo();
           },
         }),
@@ -1127,7 +1127,7 @@ test('docs', async () => {
           path: '/return-schema-arr',
           method: HttpMethod.POST,
           returning: [getApiFields(Foo)],
-          async action(_, body) {
+          async action(_) {
             return [new Foo()];
           },
         }),

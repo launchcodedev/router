@@ -452,7 +452,9 @@ export const createOpenAPI = (
             schema: responseSchema,
           },
         });
-      } catch {}
+      } catch {
+        /* allow error when extractJsonSchema */
+      }
     }
 
     if (schema instanceof JSONSchema) {
