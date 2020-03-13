@@ -47,7 +47,7 @@
     "typescript": "3"
   },
   "dependencies": {
-    "@lcdev/api-fields": "0.2.0-alpha.1",
+    "@lcdev/api-fields": "0.1",
     "@lcdev/mapper": "0.1",
     "@lcdev/ts": "0.2",
     "@oclif/command": "1",
