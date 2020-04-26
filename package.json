@@ -3,19 +3,21 @@
   "version": "1.2.0",
   "description": "Common structure for koa routing",
   "license": "UNLICENSED",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "author": {
     "name": "Launchcode",
     "email": "admin@lc.dev",
     "url": "https://lc.dev"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist",
+    "!*.tsbuildinfo",
+    "!*.test.*"
+  ],
   "bin": {
     "router-openapi-gen": "./dist/generate-openapi.js"
   },
-  "files": [
-    "*"
-  ],
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist *.tsbuildinfo",
