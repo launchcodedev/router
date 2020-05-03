@@ -1,23 +1,22 @@
 # Launchcode Router
+[![](https://shields.servallapps.com/npm/v/@lcdev/router.svg?style=flat-square&registry_uri=https%3A%2F%2Fnpm.servalldatasystems.com)](https://npm.servalldatasystems.com/#/detail/@lcdev/router)
+[![](https://shields.servallapps.com/badge/source-darkgreen?style=flat-square&logo=gitlab)](https://gitlab.servalldatasystems.com/meat-n-potatoes/router)
+
 This is our main `@lcdev/router` node package, for centralizing the logic that
 all of our backend applications share. It's designed for usage in koa servers.
 
-It's built fairly simply, with a couple core ideas:
-
-- Routes are contained within one folder, which is (mostly) a flat structure
-- Routes are hierarchical, but usually one level deep
-- Routes typically consist of one "action", prefixed by the middleware necessary
-
-To help development remain consistent, we've made a package for encapsulating that logic.
-This is not a web server, it's not a resource manager, it's not an API structure; just a tool.
-
-### Quick Start
-[![](https://shields.servallapps.com/npm/v/@lcdev/router.svg?registry_uri=https%3A%2F%2Fnpm.servalldatasystems.com)](https://npm.servalldatasystems.com/#/detail/@lcdev/router)
-
 ```bash
-# replace VERSION below with the most recent major version above (eg. 0.5.1 -> 0.5, 1.2.3 -> 1)
 yarn add @lcdev/router@VERSION
 ```
+
+It's built fairly simply, with a couple core ideas:
+
+- Routes are contained within one folder, with a flat structure
+- Routes are hierarchical, but usually one level deep
+- Routes typically consist of one "action" (where business logic lives), preceded by middleware
+
+To help development remain consistent, we've made a package for encapsulating that logic.
+This is not a web server or framework - it's a wrapper for the organic structure of our backends.
 
 So how do you use it?
 
@@ -25,19 +24,21 @@ So how do you use it?
 import { join } from 'path';
 import { createRouter } from '@lcdev/router';
 
-// here, we have a folder (./routes) that contains many Routers
-// `api` here conglomerates all of them into one single koa-router
+// here, we load files from a folder (./routes) that contains many routers
+// `api` here conglomerates all of them into one single koa router
 const api = await createRouter(join(__dirname, 'routes'));
 
 // you can use the router just like koa-router
 const myServer = new Koa();
-myServer.use(api.routes());
-myServer.use(api.allowedMethods());
+
+myServer
+  .use(api.routes())
+  .use(api.allowedMethods());
 ```
 
-Cool! But what about those files in `./routes`? Let's look at their expected structure.
+What about those files in `./routes`? Let's look at their expected structure.
 
-Below is a typescript file in the `routes` folder:
+Below is one of the files in the `routes` folder:
 
 ```typescript
 import {
@@ -57,10 +58,12 @@ const factory: RouteFactory<Dependencies> = {
     return {};
   },
 
-  create(dependencies: Dependencies) {
-    // here, bindRouteActions isn't required, but it adds `dependencies` as `this` for actions, which is useful
+  create(dependencies) {
+    // here, bindRouteActions adds `dependencies` as `this` in actions
+    // it's not required (returning an array is fine), but it makes things easier
     return bindRouteActions(dependencies, [
-      // here, route is optional (an object works), but it adds better type inference for later on
+      // here, we'll wrap one of the route definitions in the `route` function
+      // route is optional (an object works), but it adds better type inference
       route({
         path: '/hello-world',
         method: HttpMethod.GET,
@@ -77,15 +80,15 @@ const factory: RouteFactory<Dependencies> = {
 export default factory;
 ```
 
-Alright, so we now have a 'RouteFactory', whatever that is. If this file was in `./routes`,
-you'd now have a successful `/hello-world` GET route.
+Alright, so we now have a 'RouteFactory', which can be consumed by our router.
+If this file was in `./routes`, you'd now have a successful `/hello-world` GET route.
 
 A few explanations:
 
-1. We export a RouteFactory to make the router side-effect free
+1. We export a RouteFactory to make the router side-effect free (you can import it without requiring everything to be initialized)
 2. We define `Dependencies` so that you can be explicit about what other modules are used, usually this is a database connection or other integration
 
-So on to dependencies.
+So on to dependencies:
 
 ```typescript
 import {
@@ -104,12 +107,13 @@ type Dependencies = {
 const factory: RouteFactory<Dependencies> = {
   getDependencies() {
     return {
-      // we establish the database connection now - avoiding the need to unless actually using the router
+      // we establish the database connection now
+      // this avoids the need to have it ready until actually using this router
       databaseConnection: getTheDefaultDatabaseConnection(),
     };
   },
 
-  create(dependencies: Dependencies) {
+  create(dependencies) {
     return bindRouteActions(dependencies, [
       route({
         path: '/some-entity',
@@ -133,6 +137,15 @@ and `create` the router yourself with a mocked up database.
 Prefixes get applied to all actions in a router. That means `prefix: '/auth'` puts all your actions after
 that path prefix. You can forgo this and specify absolute paths in your actions if you want.
 
+```typescript
+const factory: RouteFactory<Dependencies> = {
+  prefix: '/auth',
+
+  getDependencies() { ... },
+  create(dependencies) { ... },
+};
+```
+
 ### Middleware
 You can declare middleware for a router, and/or per route. This allows flexibility and coverage.
 
@@ -140,14 +153,12 @@ You can declare middleware for a router, and/or per route. This allows flexibili
 const factory: RouteFactory<Dependencies> = {
   // your normal getDependencies and create functions
   getDependencies() { ... },
-  create(dependencies: Dependencies) { ... },
+  create(dependencies) { ... },
 
-  async middleware(dependencies: Dependencies) {
-    return [
-      // middleware here gets applied to all actions
-      // you might put authentication middleware here, for example
-    ];
-  },
+  middleware: (dependencies) => [
+    // middleware here gets applied to all actions
+    // you might put authentication middleware here, for example
+  ],
 };
 ```
 
@@ -174,6 +185,25 @@ route({
 ```
 
 This does depend on having `bodyparser` middleware. We export `bodyparser`, for common use cases, from this module.
+It's good practice to include this bodyparser per-route-factory.
+
+```typescript
+import { RouteFactory, bodyparser, propagateErrors, propagateValues } from '@lcdev/router';
+
+const factory: RouteFactory<Dependencies> = {
+  getDependencies() { ... },
+
+  // a normal normal middleware stack looks like this
+  middleware: ({ auth }) => [
+    propagateErrors(true),
+    propagateValues(),
+    bodyparser(),
+    auth.authenticate(),
+  ],
+
+  create(dependencies) { ... },
+};
+```
 
 ### Nesting
 The lcdev router is usually used in mostly flat contexts, but you can easily nest your routers.
@@ -189,7 +219,7 @@ const factory: RouteFactory<Dependencies> = {
   nested: () => findRoutes(join(__dirname, 'support')),
 
   getDependencies() { ... },
-  create(dependencies: Dependencies) { ... },
+  create(dependencies) { ... },
 };
 ```
 
@@ -200,7 +230,7 @@ The lcdev router normalizes errors that come from your actions. This pairs nicel
 
 What you need to know:
 
-- `@lcdev/router` exports `BaseError`, which is "a user visible error"
+- `@lcdev/router` exports `BaseError` (you can use `err`), which is "a user visible error"
 - In development, you'll always see your error messages
 - In production, only errors that are BaseErrors propagate up (see `internalMessage` for full details)
 
@@ -354,15 +384,14 @@ Note a couple things:
 
 Mismatching types, like an array selector when the return is an object, are ignored.
 
-This is pulled directly from the `@lcdev/mapper` package, you can read more there.
+This is pulled directly from the [`@lcdev/mapper`](../utilities/mapper.html) package, you can read more there.
 
 ### API Fields
-You might want to reduce the duplication when extracting return values. Most of the time,
+You might want to reduce the duplication when using the `returning` feature. Most of the time,
 you want to return the same fields for the same entities, records, etc.
 
-Please see the [api-fields](https://gitlab.servalldatasystems.com/meat-n-potatoes/api-fields)
-package for that. It defines a decorator, called `@ApiField()`, which you can use to automatically
-fill in the `returning` field of a route action.
+Please see the [`@lcdev/api-fields`](./api-fields.html) package for that. It defines a decorator, called `@ApiField()`,
+which you can use to automatically fill in the `returning` field of a route action.
 
 ```typescript
 import { ApiField } from '@lcdev/api-fields';
@@ -376,7 +405,6 @@ class User extends BaseEntity {
   @ApiField()
   firstName: string;
 
-  // a closure means "get ApiFields for the Permission class"
   @ApiField(() => Permission)
   permission: Permission;
 
@@ -395,11 +423,55 @@ route({
   // getApiFields returns an object with the same format that `returning` expects
   returning: getApiFields(User),
   async action(ctx) {
+    return myDatabase.select('from user where id = $0', id).first();
+  },
+}),
+route({
+  path: '/users',
+  method: HttpMethod.GET,
+  // can be composed easily - an array of users is just like this
+  returning: [getApiFields(User)],
+  async action(ctx) {
     return myDatabase.select('from user where id = $0', id);
   },
 }),
 ```
 
+Please read more on the [docs](./api-fields.html).
+
+### Incremental Adoption
+For apps that are using a basic `koa-router` and don't want the module loading
+of this package, this enables you to still use route (giving you schema validation,
+middleware, error handling, api fields / returning extraction).
+
+```typescript
+import * as Router from 'koa-router';
+import { route, addRouteToRouter, HttpMethod } from '@lcdev/router';
+
+const router = new Router();
+
+addRouteToRouter(
+  route({
+    path: '/my-route',
+    method: HttpMethod.GET,
+    returning: {
+      foo: true,
+    },
+    async action() {
+      return {
+        foo: 'bar',
+        bar: 'baz',
+      };
+    },
+  }),
+  router,
+);
+
+export default router;
+```
+
+This enable incremental adoption, though without the benefit of DI, nesting, etc.
+
 ### Open API
-There is early support for generating API documentation from your routers. Check out the `createOpenAPI` function
-for more about this. For now, we encourage you to use Insomnia for testing of APIs.
+There is early support for generating API documentation from your routers. Check out the `createOpenAPI`
+function for more about this. For now, we encourage you to use Insomnia for testing of APIs.
