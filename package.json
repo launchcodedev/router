@@ -56,7 +56,7 @@
     "@oclif/config": "1",
     "@oclif/plugin-help": "2",
     "@serafin/open-api": "3",
-    "@serafin/schema-builder": "0.9",
+    "@serafin/schema-builder": "0.12",
     "@types/koa": "2",
     "@types/koa-bodyparser": "4",
     "@types/koa-router": "7",

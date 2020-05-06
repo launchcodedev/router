@@ -630,6 +630,14 @@
   resolved "https://registry.yarnpkg.com/@serafin/open-api/-/open-api-3.0.1.tgz#2cea4a6ccff5cdaa07b487c7f53d32fce486e441"
   integrity sha512-KYOaN1kuuuDAfhEKYy1ok0L9qt5MPBbjx68DQnOrDMQn2F4DsMUeHlqiyzdvjlbh0l8Q3Nra/FXuUH6SoFwrEg==
 
+"@serafin/schema-builder@0.12":
+  version "0.12.0"
+  resolved "https://registry.yarnpkg.com/@serafin/schema-builder/-/schema-builder-0.12.0.tgz#66dd0ef2318e2b4cfdf8ed707af8116be783f53f"
+  integrity sha512-r4FYz1f/FP4206psicpnY6f/7XinR5ePWFNCjjZXoy3oXt3VCWg5+9WOl43pRViuhMwSbDHWgQEEbYNsYubNEw==
+  dependencies:
+    ajv "^6.10.0"
+    verror "^1.10.0"
+
 "@serafin/schema-builder@0.9":
   version "0.9.0"
   resolved "https://registry.yarnpkg.com/@serafin/schema-builder/-/schema-builder-0.9.0.tgz#7deb65833ab2e1974d3a186521495fa959b428dd"
