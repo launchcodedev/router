@@ -295,6 +295,40 @@ in the above format. This makes parsing your API responses a lot easier.
 By default, this supports a third "meta" property in return objects. We normally use this for pagination state.
 You can add data the `ctx.state.meta` or call `addMeta(ctx, { ... })` to fill this in in an action.
 
+### Pagination
+Actions will look basically like this:
+
+```typescript
+import { paginate, addPagination, paginationSchema, Pagination } from '@lcdev/router';
+
+route({
+  path: '/',
+  method: HttpMethod.GET,
+  middleware: [
+    // wrapping middleware around your action
+    // verifies 'page: number' and 'count?: number' query parameters
+    // 100 is the default count/pageSize when not provided
+    paginate(100), // second (optional) parameter here is the maximum limit allowed
+  ],
+  querySchema: paginationSchema,
+  returning: [getApiFields(MyEntity)],
+  async action(ctx) {
+    // this is populated by the paginate middleware
+    const { page, pageSize } = ctx.state.pagination as Pagination;
+
+    // just use page and pageSize as you normally would
+    const { results, total } = await MyEntity.query(this.kx)
+      .page(page, pageSize);
+
+    // pushes the resulting total into ctx state
+    addPagination(ctx, total);
+
+    // after this, 'total' and 'pages' are added as meta properties to the response
+    return results;
+  },
+}),
+```
+
 ### Extracting Returns
 Taking an example route action:
 
