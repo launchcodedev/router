@@ -19,6 +19,7 @@ import { extractJsonSchema } from '@lcdev/api-fields';
 import * as OpenAPI from '@serafin/open-api';
 
 export * from '@lcdev/api-fields';
+export * from './pagination';
 
 export { bodyparser };
 export { Router };
