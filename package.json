@@ -1,6 +1,6 @@
 {
   "name": "@lcdev/router",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Common structure for koa routing",
   "license": "UNLICENSED",
   "author": {
