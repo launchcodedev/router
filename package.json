@@ -8,6 +8,10 @@
     "email": "admin@lc.dev",
     "url": "https://lc.dev"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/servall/router.git"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

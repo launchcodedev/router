@@ -24,3 +24,7 @@ test:
 publish:
   extends: .node-publish-tag
   stage: publish
+
+publish-public:
+  extends: .node-publish-tag-public
+  stage: publish
