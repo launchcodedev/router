@@ -135,7 +135,7 @@ The key here is, that `getDependencies` is solely a helper. For testing, you mig
 and `create` the router yourself with a mocked up database.
 
 ### Prefix
-Prefixes get applied to all actions in a router. That means `prefix: '/auth'` puts all your actions after
+Prefixes get applied to all actions in a router. That means `prefix: '/auth'` puts all your actions within
 that path prefix. You can forgo this and specify absolute paths in your actions if you want.
 
 ```typescript
@@ -173,7 +173,7 @@ to your `action`.
 route({
   path: '/resource/:id',
   method: HttpMethod.POST,
-  // we give you @lcdev/schema-builder through the `emptySchema` export
+  // we give you @serafin/schema-builder through the `emptySchema` export
   // you can also using a json schema directly, using the `JSONSchema` export
   schema: emptySchema()
     .addNumber('x')
