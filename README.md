@@ -425,7 +425,7 @@ This is pulled directly from the [`@lcdev/mapper`](../utilities/mapper.html) pac
 You might want to reduce the duplication when using the `returning` feature. Most of the time,
 you want to return the same fields for the same entities, records, etc.
 
-Please see the [`@lcdev/api-fields`](./api-fields.html) package for that. It defines a decorator, called `@ApiField()`,
+Please see the [`@lcdev/api-fields`](https://github.com/servall/api-fields) package for that. It defines a decorator, called `@ApiField()`,
 which you can use to automatically fill in the `returning` field of a route action.
 
 ```typescript
@@ -472,7 +472,7 @@ route({
 }),
 ```
 
-Please read more on the [docs](./api-fields.html).
+Please read more on the [docs](https://github.com/servall/api-fields).
 
 ### Incremental Adoption
 For apps that are using a basic `koa-router` and don't want the module loading
