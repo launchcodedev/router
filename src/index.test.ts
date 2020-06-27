@@ -26,6 +26,7 @@ import {
   bodyparser,
   ApiField,
   getApiFields,
+  Route,
 } from './index';
 
 test('bindRouteActions', () => {
@@ -105,7 +106,7 @@ test('router class pattern', async () => {
       };
     }
 
-    create(dependencies: Dependencies) {
+    create(dependencies: Dependencies): Route[] {
       return bindRouteActions({ ...this, ...dependencies }, [
         {
           path: '/test1',
@@ -209,7 +210,7 @@ test('readme class example', async () => {
       };
     }
 
-    create(dependencies: Dependencies) {
+    create(dependencies: Dependencies): Route[] {
       return bindRouteActions({ ...this, ...dependencies }, [
         {
           path: '/disconnect',
