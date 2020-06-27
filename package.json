@@ -1,8 +1,8 @@
 {
   "name": "@lcdev/router",
-  "version": "1.3.0",
   "description": "Common structure for koa routing",
-  "license": "UNLICENSED",
+  "version": "1.3.0",
+  "license": "MPL-2.0",
   "author": {
     "name": "Launchcode",
     "email": "admin@lc.dev",

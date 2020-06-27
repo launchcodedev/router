@@ -1,6 +1,7 @@
 # Launchcode Router
-[![](https://shields.servallapps.com/npm/v/@lcdev/router.svg?style=flat-square&registry_uri=https%3A%2F%2Fnpm.servalldatasystems.com)](https://npm.servalldatasystems.com/#/detail/@lcdev/router)
-[![](https://shields.servallapps.com/badge/source-darkgreen?style=flat-square&logo=gitlab)](https://gitlab.servalldatasystems.com/meat-n-potatoes/router)
+[![Licensed under MPL 2.0](https://img.shields.io/badge/license-MPL_2.0-green.svg)](https://www.mozilla.org/en-US/MPL/2.0/)
+[![Build Status](https://github.com/servall/router/workflows/CI/badge.svg)](https://github.com/servall/router/actions)
+[![npm](https://img.shields.io/npm/v/@lcdev/router.svg)](https://www.npmjs.com/package/@lcdev/router)
 
 This is our main `@lcdev/router` node package, for centralizing the logic that
 all of our backend applications share. It's designed for usage in koa servers.
