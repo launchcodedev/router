@@ -134,6 +134,10 @@ const factory: RouteFactory<Dependencies> = {
 The key here is, that `getDependencies` is solely a helper. For testing, you might forgo it entirely,
 and `create` the router yourself with a mocked up database.
 
+### Testing
+Before we go too deep, check out the [testing](https://www.npmjs.com/package/@lcdev/router-testing) package.
+It provides a very simple way to use these route factories as test fixtures.
+
 ### Prefix
 Prefixes get applied to all actions in a router. That means `prefix: '/auth'` puts all your actions within
 that path prefix. You can forgo this and specify absolute paths in your actions if you want.
