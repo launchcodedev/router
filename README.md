@@ -1,6 +1,6 @@
 # Launchcode Router
 [![Licensed under MPL 2.0](https://img.shields.io/badge/license-MPL_2.0-green.svg)](https://www.mozilla.org/en-US/MPL/2.0/)
-[![Build Status](https://github.com/servall/router/workflows/CI/badge.svg)](https://github.com/servall/router/actions)
+[![Build Status](https://github.com/launchcodedev/router/workflows/CI/badge.svg)](https://github.com/launchcodedev/router/actions)
 [![npm](https://img.shields.io/npm/v/@lcdev/router.svg)](https://www.npmjs.com/package/@lcdev/router)
 
 This is our main `@lcdev/router` node package, for centralizing the logic that
@@ -429,7 +429,7 @@ This is pulled directly from the [`@lcdev/mapper`](../utilities/mapper.html) pac
 You might want to reduce the duplication when using the `returning` feature. Most of the time,
 you want to return the same fields for the same entities, records, etc.
 
-Please see the [`@lcdev/api-fields`](https://github.com/servall/api-fields) package for that. It defines a decorator, called `@ApiField()`,
+Please see the [`@lcdev/api-fields`](https://github.com/launchcodedev/api-fields) package for that. It defines a decorator, called `@ApiField()`,
 which you can use to automatically fill in the `returning` field of a route action.
 
 ```typescript
@@ -476,7 +476,7 @@ route({
 }),
 ```
 
-Please read more on the [docs](https://github.com/servall/api-fields).
+Please read more on the [docs](https://github.com/launchcodedev/api-fields).
 
 ### Incremental Adoption
 For apps that are using a basic `koa-router` and don't want the module loading
