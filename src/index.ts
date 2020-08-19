@@ -135,9 +135,9 @@ export class JSONSchema<T> implements Schema {
     const err =
       this.ajvValidate.errors &&
       this.ajvValidate.errors
-        .map(({ keyword, dataPath, message, params }) => {
-          if (keyword === 'additionalProperties') {
-            return `${message}: ${(params as any).additionalProperty}`;
+        .map(({ dataPath, message, params }) => {
+          if ('additionalProperty' in params) {
+            return `${message}: ${params.additionalProperty}`;
           }
 
           return `${dataPath}: ${message}`;
@@ -644,7 +644,7 @@ export const addRouteToRouter = (route: Route | MadeRoute, router: Router) => {
 
     if (schema) {
       bindFn(path, async (ctx, next) => {
-        const { body } = ctx.request as any;
+        const { body } = ctx.request;
 
         if (body === undefined) {
           throw new BaseError('a request body is required', 400);

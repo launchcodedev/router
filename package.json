@@ -38,7 +38,7 @@
     "@lcdev/prettier": "0.1",
     "@lcdev/router": "1",
     "@lcdev/router-testing": "1",
-    "@lcdev/tsconfig": "0.1",
+    "@lcdev/tsconfig": "0.2",
     "@types/fs-extra": "8",
     "@types/jest": "24",
     "@types/js-yaml": "3",
