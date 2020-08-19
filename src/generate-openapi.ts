@@ -1,7 +1,7 @@
 import { Command, flags } from '@oclif/command';
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import * as globby from 'globby';
+import globby from 'globby';
 import { createOpenAPI, createAllRoutes, readRouterFile } from './index';
 
 class GenerateOpenapi extends Command {

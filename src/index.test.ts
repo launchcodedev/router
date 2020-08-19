@@ -1,6 +1,6 @@
 import { routerTest } from '@lcdev/router-testing';
 import { SchemaBuilder } from '@serafin/schema-builder';
-import * as Koa from 'koa';
+import Koa from 'koa';
 import { createServer } from 'http';
 import { agent } from 'supertest';
 import { dir as tempDir } from 'tmp-promise';

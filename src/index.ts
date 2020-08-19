@@ -1,14 +1,14 @@
 /* eslint-disable import/no-dynamic-require, global-require, no-throw-literal, no-ex-assign */
-import * as Router from 'koa-router';
-import * as fs from 'fs-extra';
-import * as Ajv from 'ajv';
+import Router from 'koa-router';
+import fs from 'fs-extra';
+import Ajv from 'ajv';
+import YAML from 'js-yaml';
 import * as yup from 'yup';
-import * as YAML from 'js-yaml';
 import { join } from 'path';
 import { merge } from 'lodash';
-import * as stackTrace from 'stacktrace-parser';
-import * as resolveFrom from 'resolve-from';
-import * as bodyparser from 'koa-bodyparser';
+import stackTrace from 'stacktrace-parser';
+import resolveFrom from 'resolve-from';
+import bodyparser from 'koa-bodyparser';
 import { parse as parsePathString } from 'path-to-regexp';
 import { SchemaBuilder, JsonSchemaType } from '@serafin/schema-builder';
 import { Extraction, extract } from '@lcdev/mapper';
