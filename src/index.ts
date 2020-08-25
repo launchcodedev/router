@@ -6,7 +6,7 @@ import YAML from 'js-yaml';
 import * as yup from 'yup';
 import { join } from 'path';
 import { merge } from 'lodash';
-import stackTrace from 'stacktrace-parser';
+import { parse as parseStackTrace } from 'stacktrace-parser';
 import resolveFrom from 'resolve-from';
 import bodyparser from 'koa-bodyparser';
 import { parse as parsePathString } from 'path-to-regexp';
@@ -708,7 +708,7 @@ export const addRouteToRouter = (route: Route | MadeRoute, router: Router) => {
         error.code = error.code || -1;
         error.status = error.status || error.statusCode || 500;
         error.internalMessage = error.message;
-        error.stackTrace = error.stack && stackTrace.parse(error.stack);
+        error.stackTrace = error.stack && parseStackTrace(error.stack);
 
         // don't reveal internal message unless you've opted-in by extending BaseError
         if (!(error instanceof BaseError) && process.env.NODE_ENV === 'production') {
