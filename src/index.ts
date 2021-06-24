@@ -721,6 +721,13 @@ export const addRouteToRouter = (route: Route | MadeRoute, router: Router) => {
   });
 };
 
+export const addRoutesToRouter = (router: Router, routes: (Route | MadeRoute)[]) => {
+  for (const route of routes) {
+    addRouteToRouter(route, router);
+  }
+  return router;
+};
+
 function filterInternalMessages(
   status: number,
   errorMessage: string,
