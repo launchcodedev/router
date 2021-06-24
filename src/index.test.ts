@@ -19,6 +19,7 @@ import {
   bindRouteActions,
   createAllRoutes,
   addRouteToRouter,
+  addRoutesToRouter,
   createOpenAPI,
   propagateErrors,
   propagateValues,
@@ -1438,6 +1439,45 @@ test('addRouteToRouter', async () => {
     .get('/my-route')
     .expect(200)
     .expect({ foo: 'bar' });
+
+  server.close();
+});
+
+test('addRoutesToRouter', async () => {
+  const app = new Koa();
+  const router = new Router();
+
+  addRoutesToRouter(router, [
+    route({
+      path: '/first',
+      method: HttpMethod.GET,
+      async action() {
+        return 'first';
+      },
+    }),
+    route({
+      path: '/second',
+      method: HttpMethod.GET,
+      async action() {
+        return 'second';
+      },
+    }),
+  ]);
+
+  app.use(router.routes()).use(router.allowedMethods());
+
+  const server = createServer(app.callback());
+  const test = agent(server);
+
+  await test
+    .get('/first')
+    .expect(200)
+    .expect('first');
+
+  await test
+    .get('/second')
+    .expect(200)
+    .expect('second');
 
   server.close();
 });

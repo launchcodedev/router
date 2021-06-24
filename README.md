@@ -485,7 +485,7 @@ middleware, error handling, api fields / returning extraction).
 
 ```typescript
 import * as Router from 'koa-router';
-import { route, addRouteToRouter, HttpMethod } from '@lcdev/router';
+import { route, addRouteToRouter, addRoutesToRouter, HttpMethod } from '@lcdev/router';
 
 const router = new Router();
 
@@ -505,6 +505,21 @@ addRouteToRouter(
   }),
   router,
 );
+
+// or
+
+addRoutesToRouter(router, [
+  route({
+    path: '/my-route',
+    method: HttpMethod.GET,
+    async action() {
+      return {
+        foo: 'bar',
+        bar: 'baz',
+      };
+    },
+  }),
+]);
 
 export default router;
 ```
