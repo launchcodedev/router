@@ -66,7 +66,7 @@
     "@types/koa-router": "7",
     "@types/yup": "0.26",
     "ajv": "6",
-    "fs-extra": "8",
+    "fs-extra": "^9.0.0",
     "globby": "11",
     "js-yaml": "3",
     "koa": "2",
